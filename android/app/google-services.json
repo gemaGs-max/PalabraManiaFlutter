@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "292249107038",
+    "project_id": "gemags31",
+    "storage_bucket": "gemags31.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:292249107038:android:bea511c4a5c972772892cf",
+        "android_client_info": {
+          "package_name": "com.gema.palabramania"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPTQ7TZ-Lu2mazOfo0tVkcBYFaUc995IY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
