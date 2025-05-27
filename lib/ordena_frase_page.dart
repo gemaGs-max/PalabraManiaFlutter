@@ -27,8 +27,10 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
   ];
 
   late Map<String, String> _fraseActual;
+  List<Map<String, String>> _frasesRestantes = [];
   List<String> _palabrasDesordenadas = [];
   List<String> _respuestaUsuario = [];
+
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _mostrarResultado = false;
@@ -43,6 +45,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       duration: const Duration(seconds: 2),
     );
     _cargarMejorPuntuacion();
+    _frasesRestantes = List.from(_frases)..shuffle();
     _nuevaFrase();
   }
 
@@ -63,9 +66,49 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       _mostrarResultado = false;
       _esCorrecto = false;
       _respuestaUsuario.clear();
-      _fraseActual = _frases[Random().nextInt(_frases.length)];
+
+      if (_frasesRestantes.isEmpty) {
+        _mostrarDialogoFinal();
+        return;
+      }
+
+      _fraseActual = _frasesRestantes.removeAt(0);
       _palabrasDesordenadas = _fraseActual['en']!.split(' ')..shuffle();
     });
+  }
+
+  void _mostrarDialogoFinal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('🎉 ¡Juego terminado!'),
+            content: Text(
+              'Has completado todas las frases.\n\nPuntuación final: $_puntos ⭐',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cierra diálogo
+                  Navigator.pop(context); // Vuelve a menú
+                },
+                child: const Text('Salir'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _puntos = 0;
+                    _frasesRestantes = List.from(_frases)..shuffle();
+                    _nuevaFrase();
+                  });
+                },
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+    );
   }
 
   void _seleccionarPalabra(String palabra) {
@@ -88,7 +131,6 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       _confettiController.play();
       await _audioPlayer.play(AssetSource('audios/correcto.mp3'));
 
-      // Mostrar mensaje especial por logros
       String? mensajeEspecial;
       if (_puntos == 3) {
         mensajeEspecial = '🥉 ¡Buen comienzo!';
@@ -112,10 +154,6 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     }
 
     setState(() => _mostrarResultado = true);
-  }
-
-  void _reiniciar() {
-    _nuevaFrase();
   }
 
   @override
@@ -164,8 +202,8 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             backgroundColor: Colors.amber.shade700,
             centerTitle: true,
             title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('🔤 Ordena la frase'),
                 const SizedBox(width: 16),
@@ -180,10 +218,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
                   ),
                   child: Text(
                     '⭐ $_puntos',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -239,7 +274,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
                       ),
                       const SizedBox(height: 10),
                       ElevatedButton(
-                        onPressed: _reiniciar,
+                        onPressed: _nuevaFrase,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepOrange,
                         ),

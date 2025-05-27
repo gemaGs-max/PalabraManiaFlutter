@@ -13,6 +13,9 @@ import 'pantalla_ranking.dart';
 import 'pantalla_admin.dart';
 import 'ahorcado_page.dart';
 import 'ordena_frase_page.dart';
+import 'tienda_page.dart';
+import 'palabra_dia_page.dart';
+import 'pantalla_sugerencias.dart'; // 👈 NUEVO
 
 class PantallaJuegos extends StatefulWidget {
   @override
@@ -144,6 +147,13 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                 _gameCard('🎤', 'Escucha Inglés', PronunciacionSimulada()),
                 _gameCard('🕹️', 'Ahorcado', AhorcadoPage()),
                 _gameCard('🔡', 'Ordena la frase', OrdenaFrasePage()),
+                _gameCard('📖', 'Palabra del día', const PalabraDelDiaPage()),
+                _gameCard('🛒', 'Tienda', const TiendaPage()),
+                _gameCard(
+                  '💌',
+                  'Sugerencias',
+                  const PantallaSugerencias(),
+                ), // ✅ NUEVO
                 _gameCard('🏆', 'Ranking', PantallaRanking()),
                 if (esAdmin) _gameCard('🔧', 'Admin', PantallaAdmin()),
               ],

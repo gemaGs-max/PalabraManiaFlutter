@@ -1,3 +1,4 @@
+// completa_frase_page.dart actualizado con medallas visibles
 import 'package:flutter/material.dart';
 import 'package:palabramania/services/firestore_service.dart';
 import 'package:confetti/confetti.dart';
@@ -32,6 +33,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
   String _respuestaSeleccionada = '';
   bool _mostrandoResultado = false;
   int _puntos = 0;
+  String _medalla = '';
   late ConfettiController _confettiController;
   late ConfettiController _estrellaController;
   final AudioPlayer _player = AudioPlayer();
@@ -83,9 +85,20 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
       } else {
         guardarPuntuacion('completa_frase', _puntos);
         _confettiController.play();
+        _evaluarLogro();
         _mostrarDialogoFinal();
       }
     });
+  }
+
+  void _evaluarLogro() {
+    if (_puntos == 1) {
+      _medalla = '🥉';
+    } else if (_puntos == 2) {
+      _medalla = '🥈';
+    } else if (_puntos == 3) {
+      _medalla = '🥇';
+    }
   }
 
   void _mostrarDialogoFinal() {
@@ -94,7 +107,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
       builder:
           (context) => AlertDialog(
             title: const Text('🎉 ¡Juego completado!'),
-            content: Text('Tu puntuación final es: $_puntos'),
+            content: Text('Tu puntuación final es: $_puntos $_medalla'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -104,6 +117,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
                     _respuestaSeleccionada = '';
                     _mostrandoResultado = false;
                     _puntos = 0;
+                    _medalla = '';
                   });
                 },
                 child: const Text('🔁 Reintentar'),

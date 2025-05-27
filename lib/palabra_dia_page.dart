@@ -81,6 +81,33 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
     }
   }
 
+  void _mostrarDialogoFinal() {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('✅ Has leído toda la palabra del día'),
+            content: const Text('¿Qué deseas hacer ahora?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cierra el diálogo
+                  obtenerPalabraDelDia(); // Carga una nueva palabra
+                },
+                child: const Text('🔁 Otra palabra'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cierra el diálogo
+                  Navigator.pop(context); // Vuelve a pantalla de juegos
+                },
+                child: const Text('🚪 Volver a juegos'),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,6 +176,17 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
                       style: const TextStyle(
                         fontStyle: FontStyle.italic,
                         fontSize: 16,
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+                    ElevatedButton.icon(
+                      onPressed: _mostrarDialogoFinal,
+                      icon: const Icon(Icons.check),
+                      label: const Text('He terminado'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: Colors.white,
                       ),
                     ),
                   ],
