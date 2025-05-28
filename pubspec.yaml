@@ -32,7 +32,6 @@ flutter:
   assets:
     - assets/logo.png
     - assets/audios/
-    - assets/audios/correcto.mp3
-    - assets/audios/error.mp3
     - assets/ahorcado/
     - assets/avatars/
+    - assets/images/mono.png

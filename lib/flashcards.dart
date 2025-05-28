@@ -1,9 +1,11 @@
+// flashcards.dart (actualizado con el mono interactivo)
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:palabramania/services/firestore_service.dart';
 import 'package:confetti/confetti.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'widgets/personaje_habla.dart';
 
 class FlashcardsPage extends StatefulWidget {
   @override
@@ -27,6 +29,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
   bool _mostrarFeedback = false;
   bool _bloquear = false;
   String _feedback = '';
+  String _mensajeMono = "\u00a1Vamos a empezar!";
   Timer? _timer;
   late ConfettiController _confettiController;
   final TextEditingController _respuestaController = TextEditingController();
@@ -61,6 +64,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _puntos = 0;
     _mostrarFeedback = false;
     _bloquear = false;
+    _mensajeMono = "\u00a1Vamos a empezar!";
     _respuestaController.clear();
     _iniciarTemporizador();
   }
@@ -85,6 +89,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
       _feedback = '⏰ Tiempo agotado. Era: $correcta';
       _mostrarFeedback = true;
       _bloquear = true;
+      _mensajeMono = "\u00a1Oh no! Se acab\u00f3 el tiempo.";
     });
     Future.delayed(Duration(seconds: 2), _pasarSiguiente);
   }
@@ -97,9 +102,11 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     setState(() {
       if (respuesta == correcta) {
         _puntos++;
-        _feedback = '🎉 ¡Correcto!';
+        _feedback = '🎉 \u00a1Correcto!';
+        _mensajeMono = "\u00a1Genial! \u00a1Sigue as\u00ed!";
       } else {
         _feedback = '❌ Era: ${_flashcards[_currentIndex]['back']}';
+        _mensajeMono = "\u00a1Ups! Intenta con la siguiente.";
       }
       _mostrarFeedback = true;
       _bloquear = true;
@@ -111,15 +118,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     if (_currentIndex + 1 >= _flashcards.length) {
       guardarPuntuacion('flashcards', _puntos);
       _confettiController.play();
-
-      if (_puntos == 3) {
-        _mostrarMensajeLogro('🥉 ¡Buen comienzo!');
-      } else if (_puntos == 5) {
-        _mostrarMensajeLogro('🥈 ¡Sigue así!');
-      } else if (_puntos == 10) {
-        _mostrarMensajeLogro('🥇 ¡Eres una máquina!');
-      }
-
+      _mensajeMono = "\u00a1Has terminado! \u00bfRepetimos?";
       _mostrarDialogoFinal();
       return;
     }
@@ -132,16 +131,6 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _iniciarTemporizador();
   }
 
-  void _mostrarMensajeLogro(String texto) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(texto),
-        backgroundColor: Colors.teal,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
   void _mostrarDialogoFinal() {
     _timer?.cancel();
     showDialog(
@@ -149,20 +138,20 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
-            title: Text('✅ Juego completado'),
+            title: const Text('✅ Juego completado'),
             content: Text(
-              'Has conseguido $_puntos puntos.\n¿Quieres reintentar?',
+              'Has conseguido $_puntos puntos.\nTu mejor puntuaci\u00f3n: $_mejorPuntuacion\n\u00bfQuieres reintentar?',
             ),
             actions: [
               TextButton(
-                child: Text('Salir'),
+                child: const Text('Salir'),
                 onPressed:
                     () => Navigator.of(
                       context,
                     ).popUntil((route) => route.isFirst),
               ),
               ElevatedButton(
-                child: Text('Reintentar'),
+                child: const Text('Reintentar'),
                 onPressed: () {
                   Navigator.of(context).pop();
                   setState(() {
@@ -190,51 +179,25 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: Color(0xFFE0F7FA),
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(kToolbarHeight),
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF26C6DA), Color(0xFF00ACC1)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: AppBar(
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.flash_on, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      'Flashcards',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                centerTitle: true,
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Center(
-                      child: Text(
-                        '⭐ $_puntos | 🏆 $_mejorPuntuacion\n⏱️ $_tiempoRestante s',
-                        style: TextStyle(fontSize: 14),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          backgroundColor: const Color(0xFFE0F7FA),
+          appBar: AppBar(
+            backgroundColor: Colors.teal,
+            title: const Text('Flashcards'),
+            centerTitle: true,
           ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               children: [
+                Text(
+                  '🏆 Mejor puntuaci\u00f3n: $_mejorPuntuacion',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.teal.shade800,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: (_currentIndex + 1) / _flashcards.length,
                   backgroundColor: Colors.teal.shade100,
@@ -269,7 +232,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   controller: _respuestaController,
                   enabled: !_bloquear,
                   decoration: InputDecoration(
-                    hintText: 'Escribe la palabra en inglés',
+                    hintText: 'Escribe la palabra en ingl\u00e9s',
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -291,7 +254,6 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    elevation: 5,
                   ),
                   child: const Text(
                     'Comprobar',
@@ -331,6 +293,11 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             gravity: 0.1,
             shouldLoop: false,
           ),
+        ),
+        Positioned(
+          bottom: 12,
+          right: 12,
+          child: PersonajeHabla(mensaje: _mensajeMono),
         ),
       ],
     );

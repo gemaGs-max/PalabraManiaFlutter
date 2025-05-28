@@ -15,7 +15,8 @@ import 'ahorcado_page.dart';
 import 'ordena_frase_page.dart';
 import 'tienda_page.dart';
 import 'palabra_dia_page.dart';
-import 'pantalla_sugerencias.dart'; // 👈 NUEVO
+import 'pantalla_sugerencias.dart';
+import 'reto_del_mono_page.dart'; // 👈 NUEVO JUEGO
 
 class PantallaJuegos extends StatefulWidget {
   @override
@@ -61,7 +62,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 232, 162, 57),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 209, 26, 197),
+        backgroundColor: const Color.fromARGB(255, 219, 67, 209),
         elevation: 0,
         title: Text('¡Hola, $nombreUsuario!'),
         centerTitle: true,
@@ -98,7 +99,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
       body: Column(
         children: [
           Container(
-            color: const Color.fromARGB(255, 50, 152, 189),
+            color: const Color.fromARGB(255, 71, 157, 188),
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               children: [
@@ -113,7 +114,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                   ),
                   child: LinearProgressIndicator(
                     value: progresoNivel(),
-                    backgroundColor: const Color(0xFFB9F6CA),
+                    backgroundColor: const Color.fromARGB(255, 196, 236, 243),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       Colors.white,
                     ),
@@ -150,10 +151,11 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                 _gameCard('📖', 'Palabra del día', const PalabraDelDiaPage()),
                 _gameCard('🛒', 'Tienda', const TiendaPage()),
                 _gameCard(
-                  '💌',
-                  'Sugerencias',
-                  const PantallaSugerencias(),
-                ), // ✅ NUEVO
+                  '🐒',
+                  'Reto del Mono',
+                  RetoDelMonoPage(),
+                ), // NUEVO JUEGO
+                _gameCard('💌', 'Sugerencias', const PantallaSugerencias()),
                 _gameCard('🏆', 'Ranking', PantallaRanking()),
                 if (esAdmin) _gameCard('🔧', 'Admin', PantallaAdmin()),
               ],
@@ -173,7 +175,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
       hoverColor: const Color(0xFFE1F5FE),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 247, 208, 208),
+          color: const Color.fromARGB(255, 71, 224, 148),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFDDDDDD)),
           boxShadow: const [
