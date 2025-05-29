@@ -16,7 +16,8 @@ import 'ordena_frase_page.dart';
 import 'tienda_page.dart';
 import 'palabra_dia_page.dart';
 import 'pantalla_sugerencias.dart';
-import 'reto_del_mono_page.dart'; // 👈 NUEVO JUEGO
+import 'reto_del_mono_page.dart';
+import 'reto_pro_page.dart'; // NUEVO RETO PRO
 
 class PantallaJuegos extends StatefulWidget {
   @override
@@ -59,6 +60,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
 
   @override
   Widget build(BuildContext context) {
+    final nivel = nivelUsuario();
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 232, 162, 57),
       appBar: AppBar(
@@ -104,7 +106,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
             child: Column(
               children: [
                 Text(
-                  'Nivel ${nivelUsuario()}',
+                  'Nivel $nivel',
                   style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
                 Padding(
@@ -150,11 +152,14 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                 _gameCard('🔡', 'Ordena la frase', OrdenaFrasePage()),
                 _gameCard('📖', 'Palabra del día', const PalabraDelDiaPage()),
                 _gameCard('🛒', 'Tienda', const TiendaPage()),
-                _gameCard(
-                  '🐒',
-                  'Reto del Mono',
-                  RetoDelMonoPage(),
-                ), // NUEVO JUEGO
+                _restrictedGameCard(
+                  '💪',
+                  'Reto Pro',
+                  const RetoProPage(),
+                  nivel,
+                  40,
+                ),
+                _gameCard('🐒', 'Reto del Mono', RetoDelMonoPage()),
                 _gameCard('💌', 'Sugerencias', const PantallaSugerencias()),
                 _gameCard('🏆', 'Ranking', PantallaRanking()),
                 if (esAdmin) _gameCard('🔧', 'Admin', PantallaAdmin()),
@@ -168,9 +173,11 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
 
   Widget _gameCard(String emoji, String title, Widget destino) {
     return InkWell(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => destino));
-      },
+      onTap:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => destino),
+          ),
       borderRadius: BorderRadius.circular(14),
       hoverColor: const Color(0xFFE1F5FE),
       child: Container(
@@ -197,6 +204,83 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _restrictedGameCard(
+    String emoji,
+    String title,
+    Widget destino,
+    int nivelActual,
+    int nivelRequerido,
+  ) {
+    final enabled = nivelActual >= nivelRequerido;
+    return InkWell(
+      onTap:
+          enabled
+              ? () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => destino),
+              )
+              : () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Necesitas ser nivel $nivelRequerido para acceder a "$title".',
+                    ),
+                  ),
+                );
+              },
+      borderRadius: BorderRadius.circular(14),
+      hoverColor: const Color(0xFFE1F5FE),
+      child: Container(
+        decoration: BoxDecoration(
+          color:
+              enabled
+                  ? const Color.fromARGB(255, 71, 224, 148)
+                  : Colors.grey.shade400,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFDDDDDD)),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(2, 2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              emoji,
+              style: TextStyle(
+                fontSize: 22,
+                color: enabled ? null : Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: enabled ? Colors.black : Colors.grey.shade700,
+              ),
+            ),
+            if (!enabled)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Nivel mínimo: $nivelRequerido',
+                  style: const TextStyle(fontSize: 10, color: Colors.white70),
+                ),
+              ),
           ],
         ),
       ),
