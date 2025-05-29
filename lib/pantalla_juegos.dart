@@ -17,7 +17,7 @@ import 'tienda_page.dart';
 import 'palabra_dia_page.dart';
 import 'pantalla_sugerencias.dart';
 import 'reto_del_mono_page.dart';
-import 'reto_pro_page.dart'; // NUEVO RETO PRO
+import 'reto_pro_page.dart';
 
 class PantallaJuegos extends StatefulWidget {
   @override
@@ -156,7 +156,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                   '💪',
                   'Reto Pro',
                   const RetoProPage(),
-                  nivel,
+                  puntosTotales,
                   40,
                 ),
                 _gameCard('🐒', 'Reto del Mono', RetoDelMonoPage()),
@@ -214,10 +214,10 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
     String emoji,
     String title,
     Widget destino,
-    int nivelActual,
-    int nivelRequerido,
+    int puntosActuales,
+    int puntosRequeridos,
   ) {
-    final enabled = nivelActual >= nivelRequerido;
+    final enabled = puntosActuales >= puntosRequeridos;
     return InkWell(
       onTap:
           enabled
@@ -229,7 +229,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Necesitas ser nivel $nivelRequerido para acceder a "$title".',
+                      'Necesitas al menos $puntosRequeridos puntos para acceder a "$title".',
                     ),
                   ),
                 );
@@ -277,7 +277,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'Nivel mínimo: $nivelRequerido',
+                  'Requiere $puntosRequeridos puntos',
                   style: const TextStyle(fontSize: 10, color: Colors.white70),
                 ),
               ),
