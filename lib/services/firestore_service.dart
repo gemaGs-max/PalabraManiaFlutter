@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Guarda la mejor puntuación en la colección `puntuaciones`
-/// y actualiza el total acumulado en la colección `usuarios`.
+/// Guarda la mejor puntuación en la colección puntuaciones
+/// y actualiza el total acumulado en la colección usuarios.
 Future<void> guardarPuntuacion(String juego, int nuevaPuntuacion) async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
@@ -39,7 +39,7 @@ Future<void> guardarPuntuacion(String juego, int nuevaPuntuacion) async {
     });
   }
 
-  // Actualiza el total acumulado en la colección `usuarios`
+  // Actualiza el total acumulado en la colección usuarios
   final userRef = FirebaseFirestore.instance.collection('usuarios').doc(uid);
   final userDoc = await userRef.get();
 

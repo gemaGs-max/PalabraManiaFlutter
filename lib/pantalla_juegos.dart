@@ -16,7 +16,8 @@ import 'ordena_frase_page.dart';
 import 'tienda_page.dart';
 import 'palabra_dia_page.dart';
 import 'pantalla_sugerencias.dart';
-import 'reto_del_mono_page.dart'; // 👈 NUEVO JUEGO
+import 'reto_del_mono_page.dart';
+import 'reto_pro_page.dart'; // NUEVO JUEGO BLOQUEADO
 
 class PantallaJuegos extends StatefulWidget {
   @override
@@ -60,9 +61,9 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 232, 162, 57),
+      backgroundColor: const Color.fromARGB(255, 213, 130, 184),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 219, 67, 209),
+        backgroundColor: const Color.fromARGB(255, 30, 214, 134),
         elevation: 0,
         title: Text('¡Hola, $nombreUsuario!'),
         centerTitle: true,
@@ -150,11 +151,10 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
                 _gameCard('🔡', 'Ordena la frase', OrdenaFrasePage()),
                 _gameCard('📖', 'Palabra del día', const PalabraDelDiaPage()),
                 _gameCard('🛒', 'Tienda', const TiendaPage()),
-                _gameCard(
-                  '🐒',
-                  'Reto del Mono',
-                  RetoDelMonoPage(),
-                ), // NUEVO JUEGO
+                _gameCard('🐒', 'Reto del Mono', RetoDelMonoPage()),
+                puntosTotales >= 40
+                    ? _gameCard('🔥', 'Reto Pro', const RetoProPage())
+                    : _gameCardBloqueado('🔥', 'Reto Pro (Bloqueado)'),
                 _gameCard('💌', 'Sugerencias', const PantallaSugerencias()),
                 _gameCard('🏆', 'Ranking', PantallaRanking()),
                 if (esAdmin) _gameCard('🔧', 'Admin', PantallaAdmin()),
@@ -185,6 +185,42 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
               offset: Offset(2, 2),
             ),
           ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 22)),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _gameCardBloqueado(String emoji, String title) {
+    return InkWell(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '🔒 Necesitas 40 puntos para desbloquear este minijuego.',
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[400],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey[300]!),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
         child: Column(
