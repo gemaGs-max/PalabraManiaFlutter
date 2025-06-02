@@ -1,3 +1,4 @@
+// Minijuego "Escucha en inglés" - El usuario escucha frases y puede pasar a la siguiente
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
@@ -11,6 +12,7 @@ class PronunciacionSimulada extends StatefulWidget {
 }
 
 class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
+  // Lista de frases y sus audios correspondientes
   final List<Map<String, String>> frases = [
     {'texto': 'How are you?', 'audio': 'how_are_you.mp3'},
     {'texto': 'Let’s practice.', 'audio': 'practice.mp3'},
@@ -19,9 +21,9 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
     {'texto': 'Have a great day!', 'audio': 'great_day.mp3'},
   ];
 
-  final AudioPlayer _player = AudioPlayer();
-  late ConfettiController _confettiController;
-  int fraseActual = 0;
+  final AudioPlayer _player = AudioPlayer(); // Reproductor de audio
+  late ConfettiController _confettiController; // Controlador de confeti
+  int fraseActual = 0; // Índice de la frase actual
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
     super.dispose();
   }
 
+  // Reproduce el audio de la frase actual y lanza confeti
   Future<void> reproducirAudio(String archivo) async {
     try {
       await _player.play(AssetSource('audios/$archivo'));
@@ -45,6 +48,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
     }
   }
 
+  // Avanza a la siguiente frase en la lista
   void siguienteFrase() {
     setState(() {
       fraseActual = (fraseActual + 1) % frases.length;
@@ -74,6 +78,8 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
                   style: TextStyle(fontSize: 22),
                 ),
                 const SizedBox(height: 20),
+
+                // Tarjeta con la frase en pantalla
                 Card(
                   elevation: 4,
                   shape: RoundedRectangleBorder(
@@ -93,7 +99,10 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 40),
+
+                // Botón para reproducir el audio
                 ElevatedButton.icon(
                   icon: const Icon(Icons.volume_up),
                   label: const Text('Escuchar audio'),
@@ -110,7 +119,10 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
+
+                // Botón para cambiar de frase
                 ElevatedButton(
                   onPressed: siguienteFrase,
                   child: const Text('➡️ Otra frase'),
@@ -123,6 +135,8 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
             ),
           ),
         ),
+
+        // Confeti animado al reproducir el audio
         Align(
           alignment: Alignment.center,
           child: ConfettiWidget(

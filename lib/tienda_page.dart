@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'carrito_page.dart';
 import 'producto.dart';
 
+// Pantalla principal de la tienda donde se listan productos para comprar
 class TiendaPage extends StatefulWidget {
   const TiendaPage({super.key});
 
@@ -10,6 +11,7 @@ class TiendaPage extends StatefulWidget {
 }
 
 class _TiendaPageState extends State<TiendaPage> {
+  // Lista de productos disponibles en la tienda
   final List<Producto> productos = [
     Producto(
       id: '1',
@@ -43,18 +45,22 @@ class _TiendaPageState extends State<TiendaPage> {
     ),
   ];
 
+  // Mapa que almacena productos y su cantidad en el carrito
   final Map<Producto, int> carrito = {};
 
+  // Agrega un producto al carrito o incrementa su cantidad
   void agregarAlCarrito(Producto producto) {
     setState(() {
       carrito.update(producto, (cantidad) => cantidad + 1, ifAbsent: () => 1);
     });
 
+    // Muestra mensaje de confirmación
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${producto.nombre} añadido al carrito')),
     );
   }
 
+  // Navega a la pantalla del carrito
   void irAlCarrito() {
     Navigator.push(
       context,
@@ -62,6 +68,7 @@ class _TiendaPageState extends State<TiendaPage> {
     );
   }
 
+  // Calcula el total de productos en el carrito
   int totalEnCarrito() {
     if (carrito.isEmpty) return 0;
     return carrito.values.reduce((a, b) => a + b);
@@ -80,6 +87,7 @@ class _TiendaPageState extends State<TiendaPage> {
                 icon: const Icon(Icons.shopping_cart),
                 onPressed: irAlCarrito,
               ),
+              // Muestra un contador sobre el icono si hay productos en el carrito
               if (carrito.isNotEmpty)
                 Positioned(
                   right: 6,
@@ -104,6 +112,7 @@ class _TiendaPageState extends State<TiendaPage> {
           ),
         ],
       ),
+      // Lista de productos disponibles para añadir al carrito
       body: ListView.builder(
         itemCount: productos.length,
         itemBuilder: (context, index) {

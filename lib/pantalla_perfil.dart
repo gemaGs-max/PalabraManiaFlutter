@@ -1,3 +1,4 @@
+// Pantalla que muestra el perfil del usuario logueado
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -19,12 +20,15 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
   @override
   void initState() {
     super.initState();
-    _cargarDatosUsuario();
+    _cargarDatosUsuario(); // Carga los datos al iniciar la pantalla
   }
 
+  // Calcula el nivel del usuario según los puntos
   int nivelUsuario() => (puntosTotales / 100).floor() + 1;
+  // Calcula el porcentaje hacia el siguiente nivel
   double progresoNivel() => (puntosTotales % 100) / 100;
 
+  // Carga desde Firestore los datos del usuario actual y sus puntuaciones
   Future<void> _cargarDatosUsuario() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -41,6 +45,7 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
       });
     }
 
+    // Carga las mejores puntuaciones por minijuego desde la colección 'puntuaciones'
     final puntuacionesSnapshot =
         await FirebaseFirestore.instance
             .collection('puntuaciones')
@@ -73,6 +78,7 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
         padding: const EdgeInsets.all(24.0),
         child: ListView(
           children: [
+            // Muestra el avatar si está definido
             if (avatarUrl != null)
               Center(
                 child: CircleAvatar(
@@ -108,6 +114,8 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const Divider(height: 30),
+
+            // Sección de puntuaciones por minijuego
             const Text(
               '🧩 Mejores puntuaciones por minijuego:',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -125,7 +133,10 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                   style: const TextStyle(fontSize: 16),
                 );
               }),
+
             const Divider(height: 30),
+
+            // Sección de logros desbloqueados
             const Text(
               '🏅 Logros desbloqueados:',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -146,7 +157,10 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                 '🧩 Has jugado a los 3 minijuegos diferentes 👏',
                 style: TextStyle(fontSize: 16),
               ),
+
             const SizedBox(height: 30),
+
+            // Botón para cambiar avatar
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -160,7 +174,10 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                 backgroundColor: const Color.fromARGB(255, 219, 236, 107),
               ),
             ),
+
             const SizedBox(height: 10),
+
+            // Botón para volver a la pantalla anterior
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(

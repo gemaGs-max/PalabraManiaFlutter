@@ -1,8 +1,10 @@
+// Importaciones necesarias
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:translator/translator.dart';
+import 'dart:convert'; // Para decodificar JSON
+import 'package:http/http.dart' as http; // Para realizar peticiones HTTP
+import 'package:translator/translator.dart'; // Para traducir textos
 
+// Pantalla principal de la palabra del día
 class PalabraDelDiaPage extends StatefulWidget {
   const PalabraDelDiaPage({super.key});
 
@@ -11,23 +13,26 @@ class PalabraDelDiaPage extends StatefulWidget {
 }
 
 class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
+  // Variables para almacenar la información de la palabra
   String palabra = '';
   String definicion = '';
   String ejemplo = '';
   String traduccion = '';
-  bool cargando = true;
+  bool cargando = true; // Muestra indicador de carga
 
   @override
   void initState() {
     super.initState();
-    obtenerPalabraDelDia();
+    obtenerPalabraDelDia(); // Al iniciar, carga una palabra
   }
 
+  // Función principal que obtiene y traduce la palabra del día
   Future<void> obtenerPalabraDelDia() async {
     setState(() {
       cargando = true;
     });
 
+    // Petición a API que devuelve una palabra aleatoria
     final response = await http.get(
       Uri.parse('https://random-word-api.herokuapp.com/word'),
     );
@@ -36,24 +41,30 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
       final List palabras = jsonDecode(response.body);
       palabra = palabras.first;
 
+      // Consulta definición en API gratuita de diccionario
       final definicionResponse = await http.get(
         Uri.parse('https://api.dictionaryapi.dev/api/v2/entries/en/$palabra'),
       );
 
       if (definicionResponse.statusCode == 200) {
         final List data = jsonDecode(definicionResponse.body);
+
+        // Extrae definición y ejemplo (si hay)
         final definicionIngles =
             data[0]['meanings'][0]['definitions'][0]['definition'] ??
             'Sin definición';
+
         final ejemploOriginal =
             data[0]['meanings'][0]['definitions'][0]['example'];
 
+        // Traduce al español usando GoogleTranslator
         final traductor = GoogleTranslator();
         final traduccionResult = await traductor.translate(
           definicionIngles,
           to: 'es',
         );
 
+        // Actualiza el estado con los datos
         setState(() {
           definicion = definicionIngles;
           traduccion = traduccionResult.text;
@@ -63,6 +74,7 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
           cargando = false;
         });
       } else {
+        // No se encontró definición
         setState(() {
           definicion = 'No se encontró definición para "$palabra"';
           traduccion = '';
@@ -71,6 +83,7 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
         });
       }
     } else {
+      // Fallo al obtener palabra
       setState(() {
         palabra = 'Error';
         definicion = 'No se pudo obtener la palabra del día';
@@ -81,6 +94,7 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
     }
   }
 
+  // Diálogo cuando el usuario ha terminado de leer
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -89,17 +103,19 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
             title: const Text('✅ Has leído toda la palabra del día'),
             content: const Text('¿Qué deseas hacer ahora?'),
             actions: [
+              // Botón para cargar otra palabra
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Cierra el diálogo
-                  obtenerPalabraDelDia(); // Carga una nueva palabra
+                  Navigator.pop(context); // Cierra diálogo
+                  obtenerPalabraDelDia(); // Carga otra palabra
                 },
                 child: const Text('🔁 Otra palabra'),
               ),
+              // Botón para volver a la pantalla de juegos
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Cierra el diálogo
-                  Navigator.pop(context); // Vuelve a pantalla de juegos
+                  Navigator.pop(context); // Cierra diálogo
+                  Navigator.pop(context); // Vuelve atrás
                 },
                 child: const Text('🚪 Volver a juegos'),
               ),
@@ -118,11 +134,14 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
       backgroundColor: const Color(0xFFE3F2FD),
       body:
           cargando
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                child: CircularProgressIndicator(),
+              ) // Muestra carga
               : Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: ListView(
                   children: [
+                    // Palabra obtenida
                     Text(
                       '🔤 Palabra: $palabra',
                       style: const TextStyle(
@@ -132,6 +151,7 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
                     ),
                     const SizedBox(height: 20),
 
+                    // Sección de definición
                     const Text(
                       '📚 Definición:',
                       style: TextStyle(
@@ -148,6 +168,8 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
                     ),
 
                     const SizedBox(height: 20),
+
+                    // Sección de traducción
                     const Text(
                       '🌍 Traducción:',
                       style: TextStyle(
@@ -164,6 +186,8 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
                     ),
 
                     const SizedBox(height: 20),
+
+                    // Sección de ejemplo
                     const Text(
                       '📝 Ejemplo:',
                       style: TextStyle(
@@ -180,6 +204,8 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
                     ),
 
                     const SizedBox(height: 30),
+
+                    // Botón para finalizar la actividad
                     ElevatedButton.icon(
                       onPressed: _mostrarDialogoFinal,
                       icon: const Icon(Icons.check),
@@ -192,6 +218,8 @@ class _PalabraDelDiaPageState extends State<PalabraDelDiaPage> {
                   ],
                 ),
               ),
+
+      // Botón flotante para cargar otra palabra
       floatingActionButton: FloatingActionButton.extended(
         onPressed: obtenerPalabraDelDia,
         label: const Text('Otra palabra'),

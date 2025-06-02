@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:palabramania/services/firestore_service.dart';
 import 'dart:math';
 
@@ -11,7 +10,7 @@ class RetoDelMonoPage extends StatefulWidget {
 }
 
 class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
-  // Lista completa de preguntas
+  // Lista de preguntas en inglés con sus opciones y la respuesta correcta
   final List<Map<String, dynamic>> _preguntas = [
     {
       'pregunta': 'What is the capital of France?',
@@ -40,53 +39,48 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
     },
   ];
 
+  // Lista que se llenará con preguntas aleatorias
   late List<Map<String, dynamic>> _preguntasSeleccionadas;
-  int _preguntaActual = 0;
-  int _puntuacion = 0;
-  int _mejorPuntuacion = 0;
-  String _fraseMono = 'Hello! Ready for the challenge?';
-  bool _mostrarBoton = false;
 
+  int _preguntaActual = 0; // Índice de la pregunta actual
+  int _puntuacion = 0; // Puntos del jugador
+  String _fraseMono = 'Hi! Ready for the challenge?'; // Frase inicial del mono
+  bool _mostrarBoton = false; // Si se debe mostrar el botón de reinicio
+
+  // Frases que el mono dice cuando el usuario acierta
   final List<String> _frasesExito = [
-    'You are amazing!',
     'Great job!',
-    'Correct! Awesome!',
+    'Awesome!',
+    'Correct! You rock!',
     'Well done!',
   ];
 
+  // Frases que el mono dice cuando el usuario falla
   final List<String> _frasesFallo = [
-    'Oops! Not that one...',
-    'Almost there!',
-    'No worries, try the next one!',
-    'Try again :)',
+    'Oops! That was not correct.',
+    'Almost!',
+    'Don’t worry, try the next one!',
+    'Keep going :)',
   ];
 
   @override
   void initState() {
     super.initState();
+    // Al iniciar, seleccionamos 3 preguntas aleatorias
     _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
-    _cargarMejorPuntuacion();
   }
 
-  // Obtener mejor puntuación del usuario en este minijuego
-  Future<void> _cargarMejorPuntuacion() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final datos = await getPuntuacion(user.uid, 'retoMono');
-    setState(() {
-      _mejorPuntuacion = datos?['puntos'] ?? 0;
-    });
-  }
-
-  // Elegir preguntas aleatorias
+  // Función para mezclar y obtener una lista limitada de preguntas
   List<Map<String, dynamic>> _obtenerPreguntasAleatorias(int cantidad) {
-    final copia = List<Map<String, dynamic>>.from(_preguntas);
-    copia.shuffle();
-    return copia.take(cantidad).toList();
+    final random = Random();
+    final preguntasCopia = List<Map<String, dynamic>>.from(_preguntas);
+    preguntasCopia.shuffle(random); // Mezclar el orden
+    return preguntasCopia
+        .take(cantidad)
+        .toList(); // Tomar las primeras 'cantidad'
   }
 
-  // Verificar respuesta seleccionada
+  // Lógica para cuando el usuario responde
   void _responder(String seleccionada) {
     final pregunta = _preguntasSeleccionadas[_preguntaActual];
     final esCorrecta = seleccionada == pregunta['respuesta'];
@@ -99,26 +93,25 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
         _fraseMono = _frasesFallo[Random().nextInt(_frasesFallo.length)];
       }
 
-      // Pasar a siguiente pregunta o terminar
       if (_preguntaActual < _preguntasSeleccionadas.length - 1) {
-        _preguntaActual++;
+        _preguntaActual++; // Pasar a la siguiente pregunta
       } else {
-        _mostrarBoton = true;
+        _mostrarBoton = true; // Juego finalizado
         guardarPuntuacion(
           'retoMono',
           _puntuacion,
-        ); // ✅ guardar en Firestore con lógica adaptada
+        ); // Guardar puntuación en Firestore
       }
     });
   }
 
-  // Reiniciar minijuego
+  // Reinicia el juego desde cero
   void _reiniciarJuego() {
     setState(() {
       _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
       _preguntaActual = 0;
       _puntuacion = 0;
-      _fraseMono = 'Hello! Ready for the challenge?';
+      _fraseMono = 'Hi! Ready for the challenge?';
       _mostrarBoton = false;
     });
   }
@@ -138,10 +131,12 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Imagen del mono
             Image.asset('assets/images/mono.png', height: 120),
+
             const SizedBox(height: 12),
 
-            // Frase animada del personaje
+            // Frase que dice el mono
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               child: Text(
@@ -155,43 +150,40 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
             ),
 
             const SizedBox(height: 20),
-            Text(
-              'Best score: $_mejorPuntuacion',
-              style: const TextStyle(fontSize: 14),
-            ),
 
-            const SizedBox(height: 10),
+            // Pregunta actual
             Text(
               pregunta['pregunta'],
-              textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
 
             const SizedBox(height: 20),
 
-            // Opciones
+            // Opciones de respuesta
             ...List.generate(pregunta['opciones'].length, (index) {
               final opcion = pregunta['opciones'][index];
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: ElevatedButton(
-                  onPressed: _mostrarBoton ? null : () => _responder(opcion),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.lightBlueAccent,
                     minimumSize: const Size(double.infinity, 48),
                   ),
+                  onPressed: _mostrarBoton ? null : () => _responder(opcion),
                   child: Text(opcion, style: const TextStyle(fontSize: 16)),
                 ),
               );
             }),
 
+            // Si ya ha terminado el juego, mostramos la puntuación final
             if (_mostrarBoton) ...[
               const SizedBox(height: 20),
               Text('Score: $_puntuacion / ${_preguntasSeleccionadas.length}'),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: _reiniciarJuego,
-                child: const Text('Try again?'),
+                child: const Text('Play again?'),
               ),
             ],
           ],

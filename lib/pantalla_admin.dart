@@ -43,116 +43,188 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     showDialog(
       context: context,
       builder:
-          (_) => AlertDialog(
-            title: Text(
-              usuarioExistente == null ? 'Añadir Usuario' : 'Editar Usuario',
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextField(
-                    controller: nombreCtrl,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                  ),
-                  TextField(
-                    controller: apellidosCtrl,
-                    decoration: const InputDecoration(labelText: 'Apellidos'),
-                  ),
-                  TextField(
-                    controller: telefonoCtrl,
-                    decoration: const InputDecoration(labelText: 'Teléfono'),
-                  ),
-                  TextField(
-                    controller: emailCtrl,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                  ),
-                  if (usuarioExistente == null)
-                    TextField(
-                      controller: passCtrl,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Contraseña',
+          (_) => StatefulBuilder(
+            // Uso StatefulBuilder para permitir setState local dentro del diálogo
+            builder: (contextDialog, setStateDialog) {
+              return AlertDialog(
+                title: Text(
+                  usuarioExistente == null
+                      ? 'Añadir Usuario'
+                      : 'Editar Usuario',
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: nombreCtrl,
+                        decoration: const InputDecoration(labelText: 'Nombre'),
                       ),
-                    ),
-                  DropdownButton<String>(
-                    value: rol,
-                    onChanged:
-                        (value) => setState(() => rol = value ?? 'usuario'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'usuario',
-                        child: Text('Usuario'),
+                      TextField(
+                        controller: apellidosCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Apellidos',
+                        ),
                       ),
-                      DropdownMenuItem(
-                        value: 'administrador',
-                        child: Text('Administrador'),
+                      TextField(
+                        controller: telefonoCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Teléfono',
+                        ),
+                      ),
+                      TextField(
+                        controller: emailCtrl,
+                        decoration: const InputDecoration(labelText: 'Email'),
+                      ),
+                      if (usuarioExistente == null)
+                        TextField(
+                          controller: passCtrl,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Contraseña',
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Text(
+                            'Rol:',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(width: 16),
+                          DropdownButton<String>(
+                            value: rol,
+                            onChanged: (value) {
+                              setStateDialog(() {
+                                rol = value ?? 'usuario';
+                              });
+                            },
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'usuario',
+                                child: Text('Usuario'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'administrador',
+                                child: Text('Administrador'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final nombre = nombreCtrl.text.trim();
-                  final apellidos = apellidosCtrl.text.trim();
-                  final telefono = telefonoCtrl.text.trim();
-                  final email = emailCtrl.text.trim();
-                  final password = passCtrl.text.trim();
-
-                  if (usuarioExistente == null) {
-                    try {
-                      final cred = await FirebaseAuth.instance
-                          .createUserWithEmailAndPassword(
+                ),
+                actions: [
+                  // 1) Botón para enviar el mail de restablecimiento de contraseña
+                  if (usuarioExistente != null)
+                    TextButton(
+                      onPressed: () async {
+                        final email = emailCtrl.text.trim();
+                        try {
+                          await FirebaseAuth.instance.sendPasswordResetEmail(
                             email: email,
-                            password: password,
                           );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '✅ Email de restablecimiento enviado',
+                              ),
+                            ),
+                          );
+                        } on FirebaseAuthException catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('⚠️ Error: ${e.message}')),
+                          );
+                        }
+                        Navigator.of(contextDialog).pop();
+                      },
+                      child: const Text('Resetear contraseña'),
+                    ),
 
-                      await _db.collection('usuarios').doc(cred.user!.uid).set({
-                        'nombre': nombre,
-                        'apellidos': apellidos,
-                        'telefono': telefono,
-                        'email': email,
-                        'rol': rol,
-                        'puntos': 0,
-                      });
+                  // 2) Botón “Cancelar”
+                  TextButton(
+                    onPressed: () => Navigator.of(contextDialog).pop(),
+                    child: const Text('Cancelar'),
+                  ),
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Usuario creado correctamente'),
-                        ),
-                      );
-                    } on FirebaseAuthException catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('⚠️ Error: ${e.message}')),
-                      );
-                    }
-                  } else {
-                    await _db
-                        .collection('usuarios')
-                        .doc(usuarioExistente.id)
-                        .update({
-                          'nombre': nombre,
-                          'apellidos': apellidos,
-                          'telefono': telefono,
-                          'email': email,
-                          'rol': rol,
-                        });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✅ Usuario actualizado')),
-                    );
-                  }
-                  Navigator.pop(context);
-                  setState(() {});
-                },
-                child: const Text('Guardar'),
-              ),
-            ],
+                  // 3) Botón “Guardar”
+                  ElevatedButton(
+                    onPressed: () async {
+                      final nombre = nombreCtrl.text.trim();
+                      final apellidos = apellidosCtrl.text.trim();
+                      final telefono = telefonoCtrl.text.trim();
+                      final email = emailCtrl.text.trim();
+                      final password = passCtrl.text.trim();
+
+                      if (usuarioExistente == null) {
+                        // Modo “Añadir Usuario”
+                        if (email.isEmpty ||
+                            password.length < 6 ||
+                            nombre.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '⚠️ Email, contraseña (mín.6) y nombre son obligatorios',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        try {
+                          final cred = await FirebaseAuth.instance
+                              .createUserWithEmailAndPassword(
+                                email: email,
+                                password: password,
+                              );
+                          await _db
+                              .collection('usuarios')
+                              .doc(cred.user!.uid)
+                              .set({
+                                'nombre': nombre,
+                                'apellidos': apellidos,
+                                'telefono': telefono,
+                                'email': email,
+                                'rol': rol,
+                                'puntos': 0,
+                              });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ Usuario creado correctamente'),
+                            ),
+                          );
+                        } on FirebaseAuthException catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('⚠️ Error: ${e.message}')),
+                          );
+                          return;
+                        }
+                      } else {
+                        // Modo “Editar Usuario”
+                        await _db
+                            .collection('usuarios')
+                            .doc(usuarioExistente.id)
+                            .update({
+                              'nombre': nombre,
+                              'apellidos': apellidos,
+                              'telefono': telefono,
+                              'email': email,
+                              'rol': rol,
+                            });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✅ Usuario actualizado'),
+                          ),
+                        );
+                      }
+
+                      Navigator.of(contextDialog).pop();
+                      setState(() {});
+                    },
+                    child: const Text('Guardar'),
+                  ),
+                ],
+              );
+            },
           ),
     );
   }
@@ -406,8 +478,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                               docs[index].data() as Map<String, dynamic>?;
                           if (data == null ||
                               data['email'] == null ||
-                              data['rol'] == null)
+                              data['rol'] == null) {
                             return const SizedBox.shrink();
+                          }
 
                           final nombre = data['nombre'] ?? '';
                           final apellidos = data['apellidos'] ?? '';
@@ -418,8 +491,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
 
                           if (nombre.isEmpty &&
                               apellidos.isEmpty &&
-                              email.isEmpty)
+                              email.isEmpty) {
                             return const SizedBox.shrink();
+                          }
 
                           return Card(
                             color:

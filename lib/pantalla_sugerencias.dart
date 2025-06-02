@@ -1,9 +1,12 @@
+// Pantalla que muestra información de contacto para enviar sugerencias
 import 'package:flutter/material.dart';
 
 class PantallaSugerencias extends StatelessWidget {
   const PantallaSugerencias({super.key});
 
+  // URL de la página web del proyecto
   final String urlWeb = 'https://gemags-max.github.io/PalabraMania/';
+  // Dirección de correo de contacto
   final String email = 'soporte@palabramania.com';
 
   @override
@@ -23,6 +26,8 @@ class PantallaSugerencias extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
+
+            // Sección para mostrar la web del proyecto
             const Text('🌐 Puedes visitar nuestra web:'),
             SelectableText(
               urlWeb,
@@ -33,6 +38,8 @@ class PantallaSugerencias extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+
+            // Sección para mostrar el correo de contacto
             const Text('✉️ También puedes escribirnos a:'),
             SelectableText(
               email,
@@ -43,6 +50,8 @@ class PantallaSugerencias extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
+
+            // Mensaje de agradecimiento
             const Text(
               '¡Gracias por ayudarnos a mejorar! 😊',
               style: TextStyle(fontStyle: FontStyle.italic),

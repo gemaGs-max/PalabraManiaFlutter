@@ -1,4 +1,3 @@
-// flashcards.dart (actualizado con el mono interactivo)
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:palabramania/services/firestore_service.dart';
@@ -25,11 +24,11 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
   int _currentIndex = 0;
   int _puntos = 0;
   int _mejorPuntuacion = 0;
-  int _tiempoRestante = 10;
+  int _tiempoRestante = 10; // Tiempo por tarjeta
   bool _mostrarFeedback = false;
   bool _bloquear = false;
   String _feedback = '';
-  String _mensajeMono = "\u00a1Vamos a empezar!";
+  String _mensajeMono = "¡Vamos a empezar!";
   Timer? _timer;
   late ConfettiController _confettiController;
   final TextEditingController _respuestaController = TextEditingController();
@@ -45,6 +44,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _reiniciarJuego();
   }
 
+  // Cargar la mejor puntuación desde Firestore
   void _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -57,18 +57,19 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     }
   }
 
+  // Reinicia todo para comenzar una nueva partida
   void _reiniciarJuego() {
-    _flashcards = List.from(_flashcardsOriginales);
-    _flashcards.shuffle();
+    _flashcards = List.from(_flashcardsOriginales)..shuffle();
     _currentIndex = 0;
     _puntos = 0;
     _mostrarFeedback = false;
     _bloquear = false;
-    _mensajeMono = "\u00a1Vamos a empezar!";
+    _mensajeMono = "¡Vamos a empezar!";
     _respuestaController.clear();
     _iniciarTemporizador();
   }
 
+  // Inicia el temporizador para cada tarjeta
   void _iniciarTemporizador() {
     _timer?.cancel();
     _tiempoRestante = 10;
@@ -83,17 +84,19 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     });
   }
 
+  // Muestra la respuesta cuando se agota el tiempo
   void _mostrarRespuestaAutomatica() {
     final correcta = _flashcards[_currentIndex]['back']!;
     setState(() {
       _feedback = '⏰ Tiempo agotado. Era: $correcta';
       _mostrarFeedback = true;
       _bloquear = true;
-      _mensajeMono = "\u00a1Oh no! Se acab\u00f3 el tiempo.";
+      _mensajeMono = "¡Oh no! Se acabó el tiempo.";
     });
     Future.delayed(Duration(seconds: 2), _pasarSiguiente);
   }
 
+  // Verifica si la respuesta es correcta
   void _comprobarRespuesta() {
     if (_bloquear) return;
     final correcta = _flashcards[_currentIndex]['back']!.toLowerCase().trim();
@@ -102,11 +105,11 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     setState(() {
       if (respuesta == correcta) {
         _puntos++;
-        _feedback = '🎉 \u00a1Correcto!';
-        _mensajeMono = "\u00a1Genial! \u00a1Sigue as\u00ed!";
+        _feedback = '🎉 ¡Correcto!';
+        _mensajeMono = "¡Genial! ¡Sigue así!";
       } else {
         _feedback = '❌ Era: ${_flashcards[_currentIndex]['back']}';
-        _mensajeMono = "\u00a1Ups! Intenta con la siguiente.";
+        _mensajeMono = "¡Ups! Intenta con la siguiente.";
       }
       _mostrarFeedback = true;
       _bloquear = true;
@@ -114,11 +117,12 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     Future.delayed(Duration(seconds: 2), _pasarSiguiente);
   }
 
+  // Pasa a la siguiente tarjeta
   void _pasarSiguiente() {
     if (_currentIndex + 1 >= _flashcards.length) {
       guardarPuntuacion('flashcards', _puntos);
       _confettiController.play();
-      _mensajeMono = "\u00a1Has terminado! \u00bfRepetimos?";
+      _mensajeMono = "¡Has terminado! ¿Repetimos?";
       _mostrarDialogoFinal();
       return;
     }
@@ -131,6 +135,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _iniciarTemporizador();
   }
 
+  // Muestra un diálogo al terminar todas las tarjetas
   void _mostrarDialogoFinal() {
     _timer?.cancel();
     showDialog(
@@ -140,7 +145,9 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
           (context) => AlertDialog(
             title: const Text('✅ Juego completado'),
             content: Text(
-              'Has conseguido $_puntos puntos.\nTu mejor puntuaci\u00f3n: $_mejorPuntuacion\n\u00bfQuieres reintentar?',
+              'Has conseguido $_puntos puntos.\n'
+              'Tu mejor puntuación: $_mejorPuntuacion\n'
+              '¿Quieres reintentar?',
             ),
             actions: [
               TextButton(
@@ -190,7 +197,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             child: Column(
               children: [
                 Text(
-                  '🏆 Mejor puntuaci\u00f3n: $_mejorPuntuacion',
+                  '🏆 Mejor puntuación: $_mejorPuntuacion',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -198,13 +205,33 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Barra de progreso del número de tarjetas
                 LinearProgressIndicator(
                   value: (_currentIndex + 1) / _flashcards.length,
                   backgroundColor: Colors.teal.shade100,
                   color: Colors.teal.shade700,
                   minHeight: 8,
                 ),
+                const SizedBox(height: 16),
+                // Barra de tiempo restante
+                LinearProgressIndicator(
+                  value: _tiempoRestante / 10,
+                  backgroundColor: Colors.grey.shade300,
+                  color: Colors.redAccent,
+                  minHeight: 8,
+                ),
+                const SizedBox(height: 8),
+                // Texto con el tiempo restante
+                Text(
+                  '⏳ Tiempo restante: $_tiempoRestante s',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
+                ),
                 const SizedBox(height: 24),
+                // Tarjeta con la palabra en español
                 Card(
                   elevation: 6,
                   shape: RoundedRectangleBorder(
@@ -228,11 +255,12 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                // Campo de texto para escribir la traducción
                 TextField(
                   controller: _respuestaController,
                   enabled: !_bloquear,
                   decoration: InputDecoration(
-                    hintText: 'Escribe la palabra en ingl\u00e9s',
+                    hintText: 'Escribe la palabra en inglés',
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -242,6 +270,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
+                // Botón para comprobar la respuesta
                 ElevatedButton(
                   onPressed: _bloquear ? null : _comprobarRespuesta,
                   style: ElevatedButton.styleFrom(
@@ -261,6 +290,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                // Mensaje de feedback
                 if (_mostrarFeedback)
                   AnimatedOpacity(
                     opacity: 1.0,
@@ -281,6 +311,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             ),
           ),
         ),
+        // Confetti al final del juego
         Align(
           alignment: Alignment.topCenter,
           child: ConfettiWidget(
@@ -294,6 +325,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             shouldLoop: false,
           ),
         ),
+        // Mono que habla en la esquina inferior derecha
         Positioned(
           bottom: 12,
           right: 12,

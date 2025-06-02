@@ -1,3 +1,4 @@
+// Importación de paquetes necesarios
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:confetti/confetti.dart';
@@ -5,6 +6,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:palabramania/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Widget principal del juego
 class OrdenaFrasePage extends StatefulWidget {
   const OrdenaFrasePage({super.key});
 
@@ -13,6 +15,7 @@ class OrdenaFrasePage extends StatefulWidget {
 }
 
 class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
+  // Lista de frases con su traducción en español e inglés
   final List<Map<String, String>> _frases = [
     {'es': '¿Cómo estás?', 'en': 'How are you'},
     {'es': 'Yo soy estudiante', 'en': 'I am a student'},
@@ -26,15 +29,29 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     {'es': 'Vamos al parque mañana', 'en': 'We go to the park tomorrow'},
   ];
 
+  // Frase que se está mostrando actualmente
   late Map<String, String> _fraseActual;
+
+  // Lista de frases que aún no se han jugado
   List<Map<String, String>> _frasesRestantes = [];
+
+  // Palabras desordenadas de la frase actual
   List<String> _palabrasDesordenadas = [];
+
+  // Palabras que el usuario ha ido seleccionando
   List<String> _respuestaUsuario = [];
 
+  // Controlador para confeti
   late ConfettiController _confettiController;
+
+  // Reproductor de audio
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  // Estados para mostrar resultado y verificar si es correcto
   bool _mostrarResultado = false;
   bool _esCorrecto = false;
+
+  // Puntos actuales y mejor puntuación registrada
   int _puntos = 0;
   int _mejorPuntuacion = 0;
 
@@ -45,10 +62,11 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       duration: const Duration(seconds: 2),
     );
     _cargarMejorPuntuacion();
-    _frasesRestantes = List.from(_frases)..shuffle();
-    _nuevaFrase();
+    _frasesRestantes = List.from(_frases)..shuffle(); // Mezcla las frases
+    _nuevaFrase(); // Carga la primera frase
   }
 
+  // Carga la mejor puntuación del usuario desde Firestore
   Future<void> _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -61,6 +79,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     }
   }
 
+  // Selecciona una nueva frase y la desordena
   void _nuevaFrase() {
     setState(() {
       _mostrarResultado = false;
@@ -77,6 +96,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     });
   }
 
+  // Muestra un diálogo al terminar todas las frases
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -91,7 +111,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Cierra diálogo
-                  Navigator.pop(context); // Vuelve a menú
+                  Navigator.pop(context); // Regresa al menú
                 },
                 child: const Text('Salir'),
               ),
@@ -111,6 +131,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     );
   }
 
+  // Añade la palabra seleccionada a la respuesta del usuario
   void _seleccionarPalabra(String palabra) {
     if (_mostrarResultado) return;
 
@@ -120,17 +141,22 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     });
   }
 
+  // Verifica si la frase es correcta
   void _verificar() async {
     if (_respuestaUsuario.join(' ') == _fraseActual['en']) {
       _esCorrecto = true;
       _puntos++;
+
+      // Si se supera la mejor puntuación, se guarda
       if (_puntos > _mejorPuntuacion) {
         _mejorPuntuacion = _puntos;
         await guardarPuntuacion('ordena_frase', _puntos);
       }
+
       _confettiController.play();
       await _audioPlayer.play(AssetSource('audios/correcto.mp3'));
 
+      // Logros especiales según los puntos
       String? mensajeEspecial;
       if (_puntos == 3) {
         mensajeEspecial = '🥉 ¡Buen comienzo!';
@@ -139,6 +165,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       } else if (_puntos == 10) {
         mensajeEspecial = '🥇 ¡Increíble! Nivel experto 🔥';
       }
+
       if (mensajeEspecial != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -163,6 +190,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     super.dispose();
   }
 
+  // Construye los botones de palabras (respuesta o selección)
   Widget _buildPalabras(List<String> palabras, void Function(String) onTap) {
     return Wrap(
       spacing: 8,
@@ -229,6 +257,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Muestra la frase en español
                 Text(
                   'Traduce: "${_fraseActual['es']}"',
                   style: const TextStyle(
@@ -238,8 +267,10 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
+                // Muestra la respuesta actual del usuario
                 _buildPalabras(_respuestaUsuario, (_) {}),
                 const SizedBox(height: 16),
+                // Muestra las palabras disponibles para seleccionar
                 _buildPalabras(_palabrasDesordenadas, _seleccionarPalabra),
                 const SizedBox(height: 30),
                 if (!_mostrarResultado)
@@ -286,6 +317,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             ),
           ),
         ),
+        // Confeti que se muestra al acertar
         Align(
           alignment: Alignment.topCenter,
           child: ConfettiWidget(

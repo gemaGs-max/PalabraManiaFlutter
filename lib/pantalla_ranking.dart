@@ -1,9 +1,11 @@
+// Pantalla que muestra el ranking de los 10 usuarios con más puntos
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PantallaRanking extends StatelessWidget {
   const PantallaRanking({super.key});
 
+  // Función que obtiene el ranking desde Firestore
   Future<List<Map<String, dynamic>>> _obtenerRanking() async {
     final snapshot =
         await FirebaseFirestore.instance
@@ -13,6 +15,7 @@ class PantallaRanking extends StatelessWidget {
             .limit(10)
             .get();
 
+    // Convierte los documentos en una lista de mapas con los datos relevantes
     return snapshot.docs.map((doc) {
       return {
         'nombre': doc.data()['nombre'] ?? 'Sin nombre',
@@ -23,6 +26,7 @@ class PantallaRanking extends StatelessWidget {
     }).toList();
   }
 
+  // Devuelve un emoji de medalla o la posición en el ranking
   String _medalla(int index) {
     switch (index) {
       case 0:
@@ -46,7 +50,7 @@ class PantallaRanking extends StatelessWidget {
       ),
       backgroundColor: const Color(0xFFE8EAF6),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _obtenerRanking(),
+        future: _obtenerRanking(), // Carga el ranking con FutureBuilder
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -73,6 +77,7 @@ class PantallaRanking extends StatelessWidget {
                     final medalla = _medalla(index);
 
                     return ListTile(
+                      // Muestra el avatar si existe, si no, una medalla
                       leading:
                           usuario['fotoPerfil'] != null
                               ? CircleAvatar(
@@ -104,6 +109,7 @@ class PantallaRanking extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+              // Botón para volver atrás
               ElevatedButton.icon(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.arrow_back),

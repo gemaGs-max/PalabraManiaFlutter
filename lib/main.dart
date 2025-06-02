@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'pantalla_inicio.dart';
-import 'pantalla_juegos.dart';
+import 'pantalla_inicio.dart'; // Pantalla de inicio de sesión/registro
+import 'pantalla_juegos.dart'; // Pantalla principal de juegos para usuarios logueados
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Inicializamos Firebase con las opciones de configuración del proyecto
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: "AIzaSyBSzzvMzXlHBSPlaiv4Rgg6ZTCE-qc660A",
@@ -23,6 +24,7 @@ void main() async {
   runApp(const PalabraManiaApp());
 }
 
+/// Widget raíz de la aplicación PalabraManía
 class PalabraManiaApp extends StatelessWidget {
   const PalabraManiaApp({super.key});
 
@@ -32,20 +34,28 @@ class PalabraManiaApp extends StatelessWidget {
       title: 'PalabraManía',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.lightBlue,
-        scaffoldBackgroundColor: const Color(0xFFE1F5FE),
+        primarySwatch: Colors.lightBlue, // Color principal de la aplicación
+        scaffoldBackgroundColor: const Color(
+          0xFFE1F5FE,
+        ), // Color de fondo de las pantallas
       ),
+      // Usamos StreamBuilder para escuchar cambios en el estado de autenticación
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
+          // Mientras Firebase determina si hay usuario logueado, mostramos un indicador de carga
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
-          } else if (snapshot.hasData && snapshot.data != null) {
-            return PantallaJuegos(); // Usuario logueado
-          } else {
-            return const PantallaInicio(); // Usuario no logueado
+          }
+          // Si hay un usuario autenticado, navegamos a la pantalla de juegos
+          else if (snapshot.hasData && snapshot.data != null) {
+            return PantallaJuegos();
+          }
+          // Si no hay usuario, mostramos la pantalla de inicio (login/registro)
+          else {
+            return const PantallaInicio();
           }
         },
       ),

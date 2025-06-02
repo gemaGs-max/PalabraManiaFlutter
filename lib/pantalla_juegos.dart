@@ -175,7 +175,7 @@ class _PantallaJuegosState extends State<PantallaJuegos> {
       hoverColor: const Color(0xFFE1F5FE),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 71, 224, 148),
+          color: const Color.fromARGB(255, 32, 236, 138),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFDDDDDD)),
           boxShadow: const [
