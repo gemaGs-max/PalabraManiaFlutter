@@ -1,3 +1,4 @@
+// Pantalla para que el usuario elija un avatar de perfil
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,7 @@ class PantallaAvatar extends StatefulWidget {
 }
 
 class _PantallaAvatarState extends State<PantallaAvatar> {
+  // Lista de nombres de archivos de avatar disponibles
   final List<String> _avatares = [
     'avatar1.png',
     'avatar2.png',
@@ -21,14 +23,16 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
     'avatar8.jpg',
   ];
 
-  String? _seleccionado;
-  bool _guardando = false;
+  String? _seleccionado; // Avatar seleccionado actualmente
+  bool _guardando = false; // Indica si se está guardando el cambio
 
+  // Guarda el avatar seleccionado en Firestore
   Future<void> _guardarAvatar(String avatar) async {
     setState(() => _guardando = true);
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     if (uid != null) {
+      // Actualiza el campo 'fotoPerfil' en el documento del usuario
       await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
         'fotoPerfil': avatar,
       });
@@ -39,12 +43,11 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
       });
 
       if (mounted) {
+        // Muestra mensaje de éxito y vuelve atrás
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('✅ Avatar actualizado: $avatar')),
         );
-
-        // Volver a pantalla anterior (perfil o juegos)
-        Navigator.pop(context);
+        Navigator.pop(context); // Regresa a la pantalla anterior
       }
     }
   }
@@ -61,7 +64,9 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
         padding: const EdgeInsets.all(16.0),
         child:
             _guardando
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                  child: CircularProgressIndicator(),
+                ) // Muestra carga si está guardando
                 : GridView.count(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
@@ -70,7 +75,9 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
                       _avatares.map((avatar) {
                         final isSelected = _seleccionado == avatar;
                         return GestureDetector(
-                          onTap: () => _guardarAvatar(avatar),
+                          onTap:
+                              () =>
+                                  _guardarAvatar(avatar), // Al tocar se guarda
                           child: Container(
                             decoration: BoxDecoration(
                               border: Border.all(

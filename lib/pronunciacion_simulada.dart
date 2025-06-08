@@ -1,9 +1,8 @@
-// Minijuego "Escucha en inglés" - El usuario escucha frases y puede pasar a la siguiente
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
 
-/// Minijuego de escucha: el usuario escucha frases en inglés
+/// Minijuego de escucha: el usuario ve frases y las escucha con audio
 class PronunciacionSimulada extends StatefulWidget {
   const PronunciacionSimulada({super.key});
 
@@ -12,7 +11,7 @@ class PronunciacionSimulada extends StatefulWidget {
 }
 
 class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
-  // Lista de frases y sus audios correspondientes
+  // Lista de frases con el texto en inglés y el archivo de audio correspondiente
   final List<Map<String, String>> frases = [
     {'texto': 'How are you?', 'audio': 'how_are_you.mp3'},
     {'texto': 'Let’s practice.', 'audio': 'practice.mp3'},
@@ -22,47 +21,112 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
   ];
 
   final AudioPlayer _player = AudioPlayer(); // Reproductor de audio
-  late ConfettiController _confettiController; // Controlador de confeti
+  late ConfettiController _confettiController; // Controlador de confeti animado
   int fraseActual = 0; // Índice de la frase actual
 
   @override
   void initState() {
     super.initState();
+    // Inicializa el confeti con duración de 2 segundos
     _confettiController = ConfettiController(duration: Duration(seconds: 2));
   }
 
   @override
   void dispose() {
+    // Libera recursos del audio y confeti
     _player.dispose();
     _confettiController.dispose();
     super.dispose();
   }
 
-  // Reproduce el audio de la frase actual y lanza confeti
+  /// Reproduce el audio de la frase actual y lanza confeti como retroalimentación visual
   Future<void> reproducirAudio(String archivo) async {
     try {
       await _player.play(AssetSource('audios/$archivo'));
-      _confettiController.play();
+      _confettiController.play(); // Activa la animación del confeti
     } catch (e) {
       print("Error al reproducir audio: $e");
     }
   }
 
-  // Avanza a la siguiente frase en la lista
+  /// Pasa a la siguiente frase o muestra un mensaje cuando se han completado todas
   void siguienteFrase() {
-    setState(() {
-      fraseActual = (fraseActual + 1) % frases.length;
-    });
+    if (fraseActual == frases.length - 1) {
+      // Si es la última frase, muestra diálogo final con el mono y opciones
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('¡Juego completado!'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Imagen del mono
+                  Image.asset('assets/images/mono.png', height: 80),
+
+                  const SizedBox(height: 12),
+
+                  // Mensaje motivador dentro de una burbuja
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.yellow.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      '¡Buen trabajo! 🎉',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Texto con opciones
+                  const Text(
+                    'Has escuchado todas las frases.\n¿Qué quieres hacer ahora?',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actions: [
+                // Botón para repetir desde el principio
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Cierra el diálogo
+                    setState(() {
+                      fraseActual = 0; // Reinicia el índice
+                    });
+                  },
+                  child: const Text('🔁 Volver a escuchar'),
+                ),
+                // Botón para volver al menú principal
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Cierra el diálogo
+                    Navigator.of(context).pop(); // Sale del minijuego
+                  },
+                  child: const Text('🏠 Volver al menú'),
+                ),
+              ],
+            ),
+      );
+    } else {
+      // Si aún hay frases, avanza a la siguiente
+      setState(() {
+        fraseActual++;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final frase = frases[fraseActual];
+    final frase = frases[fraseActual]; // Frase actual a mostrar
 
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: const Color(0xFFE1F5FE),
+          backgroundColor: const Color(0xFFE1F5FE), // Fondo azul claro
           appBar: AppBar(
             title: const Text('🎧 Escucha en inglés'),
             backgroundColor: Colors.lightBlue,
@@ -79,7 +143,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
                 ),
                 const SizedBox(height: 20),
 
-                // Tarjeta con la frase en pantalla
+                // Tarjeta que muestra la frase
                 Card(
                   elevation: 4,
                   shape: RoundedRectangleBorder(
@@ -102,7 +166,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
 
                 const SizedBox(height: 40),
 
-                // Botón para reproducir el audio
+                // Botón para escuchar el audio
                 ElevatedButton.icon(
                   icon: const Icon(Icons.volume_up),
                   label: const Text('Escuchar audio'),
@@ -122,7 +186,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
 
                 const SizedBox(height: 20),
 
-                // Botón para cambiar de frase
+                // Botón para pasar a la siguiente frase
                 ElevatedButton(
                   onPressed: siguienteFrase,
                   child: const Text('➡️ Otra frase'),
@@ -136,7 +200,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
           ),
         ),
 
-        // Confeti animado al reproducir el audio
+        // Animación de confeti al reproducir audio
         Align(
           alignment: Alignment.center,
           child: ConfettiWidget(

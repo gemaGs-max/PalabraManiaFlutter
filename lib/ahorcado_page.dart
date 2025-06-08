@@ -178,7 +178,6 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
 
   /// Muestra el resultado final (victoria o derrota) cuando el juego ha terminado.
   Widget _construirResultado() {
-    // Si el juego no ha terminado, no mostramos nada
     if (!_juegoTerminado) return const SizedBox.shrink();
 
     return Column(
@@ -186,34 +185,43 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
         const SizedBox(height: 20),
         Text(
           _ganado
-              ? '🎉 ¡Has ganado!' // Si ganó
-              : '❌ ¡Has perdido! La palabra era: $_palabraSecreta', // Si perdió
+              ? '🎉 ¡Has ganado!'
+              : '❌ ¡Has perdido! La palabra era: $_palabraSecreta',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 20,
-            color:
-                _ganado
-                    ? Colors.green
-                    : Colors.red, // Verde en victoria, rojo en derrota
+            color: _ganado ? Colors.green : Colors.red,
           ),
         ),
         const SizedBox(height: 10),
-        // Mostramos las letras falladas
         Text(
           'Fallos: ${_fallos.join(', ')}',
           style: const TextStyle(color: Colors.redAccent),
         ),
         const SizedBox(height: 10),
-        // Mostramos los puntos obtenidos
         Text(
           'Puntos: $_puntos',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        // Botón para reiniciar el juego (jugar otra vez)
+        // Botón para reiniciar el juego
         ElevatedButton(
           onPressed: _reiniciarJuego,
           child: const Text('🔁 Jugar otra vez'),
+        ),
+        const SizedBox(height: 8),
+        // Botón para volver al menú
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(
+              context,
+            ); // Cierra esta pantalla y vuelve a la anterior
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade300,
+            foregroundColor: Colors.black,
+          ),
+          child: const Text('🏠 Volver al menú'),
         ),
       ],
     );

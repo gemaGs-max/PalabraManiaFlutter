@@ -19,8 +19,19 @@ class PantallaInicio extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo (debe estar en assets/logo.png)
-            Image.asset('assets/logo.png', width: 180),
+            // Logo con protección en caso de error al cargar
+            Image.asset(
+              'assets/logo.png',
+              width: 180,
+              errorBuilder: (context, error, stackTrace) {
+                // Si falla al cargar la imagen, se muestra un ícono alternativo
+                return const Icon(
+                  Icons.broken_image,
+                  size: 100,
+                  color: Colors.red,
+                );
+              },
+            ),
 
             const SizedBox(height: 25),
 
@@ -44,17 +55,27 @@ class PantallaInicio extends StatelessWidget {
 
             const SizedBox(height: 40),
 
-            // Botón para ir a login/registro
+            // Botón para ir a la pantalla de login/registro
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AuthScreen()),
-                );
+                try {
+                  // Intentamos navegar a la pantalla de autenticación
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  );
+                } catch (e) {
+                  // Si hay un error, se imprime en consola
+                  print("Error al navegar a AuthScreen: $e");
+                  // Aquí podrías mostrar un mensaje al usuario si lo deseas
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepOrangeAccent,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 15,
+                ),
               ),
               child: const Text(
                 '¡Empezar ya!',

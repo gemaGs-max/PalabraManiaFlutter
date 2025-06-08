@@ -1,11 +1,11 @@
-// ignore_for_file: use_build_context_synchronously
+// pantalla_admin.dart
+// Pantalla de administrador con CRUD, validación de teléfono, exportación y manejo de errores en Flutter Web
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+import 'dart:html' as html;
 
 class PantallaAdmin extends StatefulWidget {
   const PantallaAdmin({super.key});
@@ -16,13 +16,8 @@ class PantallaAdmin extends StatefulWidget {
 
 class _PantallaAdminState extends State<PantallaAdmin> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
   String _busqueda = '';
   String _rolSeleccionado = 'Todos';
-
-  int totalUsuarios = 0;
-  int totalAdmins = 0;
-  int totalNormales = 0;
 
   void _mostrarFormulario({DocumentSnapshot? usuarioExistente}) {
     final nombreCtrl = TextEditingController(
@@ -43,188 +38,186 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     showDialog(
       context: context,
       builder:
-          (_) => StatefulBuilder(
-            // Uso StatefulBuilder para permitir setState local dentro del diálogo
-            builder: (contextDialog, setStateDialog) {
-              return AlertDialog(
-                title: Text(
-                  usuarioExistente == null
-                      ? 'Añadir Usuario'
-                      : 'Editar Usuario',
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: nombreCtrl,
-                        decoration: const InputDecoration(labelText: 'Nombre'),
+          (_) => AlertDialog(
+            title: Text(
+              usuarioExistente == null ? 'Añadir Usuario' : 'Editar Usuario',
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextField(
+                    controller: nombreCtrl,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                  ),
+                  TextField(
+                    controller: apellidosCtrl,
+                    decoration: const InputDecoration(labelText: 'Apellidos'),
+                  ),
+                  TextField(
+                    controller: telefonoCtrl,
+                    decoration: const InputDecoration(labelText: 'Teléfono'),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  TextField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                  ),
+                  if (usuarioExistente == null)
+                    TextField(
+                      controller: passCtrl,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
                       ),
-                      TextField(
-                        controller: apellidosCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Apellidos',
-                        ),
+                    ),
+                  DropdownButtonFormField<String>(
+                    value: rol,
+                    decoration: const InputDecoration(labelText: 'Rol'),
+                    onChanged:
+                        (value) => setState(() => rol = value ?? 'usuario'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'usuario',
+                        child: Text('Usuario'),
                       ),
-                      TextField(
-                        controller: telefonoCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Teléfono',
-                        ),
-                      ),
-                      TextField(
-                        controller: emailCtrl,
-                        decoration: const InputDecoration(labelText: 'Email'),
-                      ),
-                      if (usuarioExistente == null)
-                        TextField(
-                          controller: passCtrl,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Contraseña',
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Text(
-                            'Rol:',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(width: 16),
-                          DropdownButton<String>(
-                            value: rol,
-                            onChanged: (value) {
-                              setStateDialog(() {
-                                rol = value ?? 'usuario';
-                              });
-                            },
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'usuario',
-                                child: Text('Usuario'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'administrador',
-                                child: Text('Administrador'),
-                              ),
-                            ],
-                          ),
-                        ],
+                      DropdownMenuItem(
+                        value: 'administrador',
+                        child: Text('Administrador'),
                       ),
                     ],
                   ),
-                ),
-                actions: [
-                  // 1) Botón para enviar el mail de restablecimiento de contraseña
-                  if (usuarioExistente != null)
-                    TextButton(
-                      onPressed: () async {
-                        final email = emailCtrl.text.trim();
-                        try {
-                          await FirebaseAuth.instance.sendPasswordResetEmail(
-                            email: email,
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                '✅ Email de restablecimiento enviado',
-                              ),
-                            ),
-                          );
-                        } on FirebaseAuthException catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('⚠️ Error: ${e.message}')),
-                          );
-                        }
-                        Navigator.of(contextDialog).pop();
-                      },
-                      child: const Text('Resetear contraseña'),
-                    ),
-
-                  // 2) Botón “Cancelar”
-                  TextButton(
-                    onPressed: () => Navigator.of(contextDialog).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-
-                  // 3) Botón “Guardar”
-                  ElevatedButton(
-                    onPressed: () async {
-                      final nombre = nombreCtrl.text.trim();
-                      final apellidos = apellidosCtrl.text.trim();
-                      final telefono = telefonoCtrl.text.trim();
-                      final email = emailCtrl.text.trim();
-                      final password = passCtrl.text.trim();
-
-                      if (usuarioExistente == null) {
-                        // Modo “Añadir Usuario”
-                        if (email.isEmpty ||
-                            password.length < 6 ||
-                            nombre.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                '⚠️ Email, contraseña (mín.6) y nombre son obligatorios',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-                        try {
-                          final cred = await FirebaseAuth.instance
-                              .createUserWithEmailAndPassword(
-                                email: email,
-                                password: password,
-                              );
-                          await _db
-                              .collection('usuarios')
-                              .doc(cred.user!.uid)
-                              .set({
-                                'nombre': nombre,
-                                'apellidos': apellidos,
-                                'telefono': telefono,
-                                'email': email,
-                                'rol': rol,
-                                'puntos': 0,
-                              });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Usuario creado correctamente'),
-                            ),
-                          );
-                        } on FirebaseAuthException catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('⚠️ Error: ${e.message}')),
-                          );
-                          return;
-                        }
-                      } else {
-                        // Modo “Editar Usuario”
-                        await _db
-                            .collection('usuarios')
-                            .doc(usuarioExistente.id)
-                            .update({
-                              'nombre': nombre,
-                              'apellidos': apellidos,
-                              'telefono': telefono,
-                              'email': email,
-                              'rol': rol,
-                            });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✅ Usuario actualizado'),
-                          ),
-                        );
-                      }
-
-                      Navigator.of(contextDialog).pop();
-                      setState(() {});
-                    },
-                    child: const Text('Guardar'),
-                  ),
                 ],
-              );
-            },
+              ),
+            ),
+            actions: [
+              if (usuarioExistente != null)
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      await FirebaseAuth.instance.sendPasswordResetEmail(
+                        email: emailCtrl.text.trim(),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Email de restablecimiento enviado'),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                      );
+                    }
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Restablecer contraseña'),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final nombre = nombreCtrl.text.trim();
+                  final apellidos = apellidosCtrl.text.trim();
+                  final telefono = telefonoCtrl.text.replaceAll(
+                    RegExp(r'\s+'),
+                    '',
+                  );
+                  final email = emailCtrl.text.trim();
+                  final password = passCtrl.text.trim();
+
+                  if (!RegExp(r'^\d{9}$').hasMatch(telefono)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '⚠️ El teléfono debe tener exactamente 9 dígitos.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (usuarioExistente == null) {
+                    if (email.isEmpty ||
+                        password.length < 6 ||
+                        nombre.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            '⚠️ Email, contraseña (mín. 6) y nombre son obligatorios.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    try {
+                      final cred = await FirebaseAuth.instance
+                          .createUserWithEmailAndPassword(
+                            email: email,
+                            password: password,
+                          );
+                      await _db.collection('usuarios').doc(cred.user!.uid).set({
+                        'nombre': nombre,
+                        'apellidos': apellidos,
+                        'telefono': telefono,
+                        'email': email,
+                        'rol': rol,
+                        'puntos': 0,
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Usuario creado correctamente'),
+                        ),
+                      );
+                    } on FirebaseAuthException catch (e) {
+                      String mensaje = '❌ Error desconocido';
+                      if (e.code == 'email-already-in-use') {
+                        mensaje = '⚠️ El correo ya está en uso.';
+                      } else if (e.code == 'invalid-email') {
+                        mensaje = '⚠️ El correo no es válido.';
+                      } else if (e.code == 'weak-password') {
+                        mensaje = '⚠️ La contraseña es demasiado débil.';
+                      } else {
+                        mensaje = '❌ Error: ${e.message}';
+                      }
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(mensaje)));
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                      );
+                    }
+                  } else {
+                    try {
+                      await _db
+                          .collection('usuarios')
+                          .doc(usuarioExistente.id)
+                          .update({
+                            'nombre': nombre,
+                            'apellidos': apellidos,
+                            'telefono': telefono,
+                            'email': email,
+                            'rol': rol,
+                          });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Usuario actualizado correctamente'),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                      );
+                    }
+                  }
+
+                  Navigator.pop(context);
+                  setState(() {});
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
           ),
     );
   }
@@ -243,7 +236,16 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ),
               TextButton(
                 onPressed: () async {
-                  await _db.collection('usuarios').doc(id).delete();
+                  try {
+                    await _db.collection('usuarios').doc(id).delete();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ Usuario eliminado')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                    );
+                  }
                   Navigator.pop(context);
                   setState(() {});
                 },
@@ -260,34 +262,27 @@ class _PantallaAdminState extends State<PantallaAdmin> {
   Future<void> _exportarCSV(List<QueryDocumentSnapshot> docs) async {
     final buffer = StringBuffer();
     buffer.writeln('Nombre,Apellidos,Email,Teléfono,Rol,Puntos');
-
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>?;
       if (data == null) continue;
-
       final nombre = data['nombre'] ?? '';
       final apellidos = data['apellidos'] ?? '';
       final email = data['email'] ?? '';
       final telefono = data['telefono'] ?? '';
       final rol = data['rol'] ?? '';
       final puntos = data['puntos'] ?? data['puntosTotales'] ?? '0';
-
       buffer.writeln('$nombre,$apellidos,$email,$telefono,$rol,$puntos');
     }
-
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/usuarios_exportados.csv');
-    await file.writeAsString(buffer.toString());
-
-    if (!mounted) return;
-
+    final bytes = utf8.encode(buffer.toString());
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', 'usuarios_exportados.csv')
+      ..click();
+    html.Url.revokeObjectUrl(url);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ Archivo exportado correctamente')),
     );
-
-    await Share.shareXFiles([
-      XFile(file.path),
-    ], text: 'Usuarios exportados desde PalabraManía');
   }
 
   Future<void> _exportarTop10RankingCSV() async {
@@ -297,39 +292,31 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             .orderBy('puntos', descending: true)
             .limit(10)
             .get();
-
     final buffer = StringBuffer();
     buffer.writeln('Ranking,Nombre,Apellidos,Email,Puntos');
-
     for (int i = 0; i < snapshot.docs.length; i++) {
       final data = snapshot.docs[i].data() as Map<String, dynamic>? ?? {};
       final nombre = data['nombre'] ?? '';
       final apellidos = data['apellidos'] ?? '';
       final email = data['email'] ?? '';
       final puntos = data['puntos'] ?? data['puntosTotales'] ?? '0';
-
       buffer.writeln('${i + 1},$nombre,$apellidos,$email,$puntos');
     }
-
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/top10_ranking_palabramania.csv');
-    await file.writeAsString(buffer.toString());
-
-    if (!mounted) return;
-
+    final bytes = utf8.encode(buffer.toString());
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', 'top10_ranking_palabramania.csv')
+      ..click();
+    html.Url.revokeObjectUrl(url);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ Top 10 exportado correctamente')),
     );
-
-    await Share.shareXFiles([
-      XFile(file.path),
-    ], text: 'Top 10 usuarios PalabraManía');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F8E9),
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
         backgroundColor: Colors.deepOrangeAccent,
@@ -345,7 +332,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           IconButton(
             icon: const Icon(Icons.emoji_events),
             tooltip: 'Exportar TOP 10',
-            onPressed: () async => await _exportarTop10RankingCSV(),
+            onPressed: () async {
+              await _exportarTop10RankingCSV();
+            },
           ),
         ],
       ),
@@ -411,7 +400,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return const Center(child: CircularProgressIndicator());
-
                 final docs =
                     snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>?;
@@ -419,7 +407,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                           data['email'] == null ||
                           data['rol'] == null)
                         return false;
-
                       final nombre =
                           (data['nombre'] ?? '').toString().toLowerCase();
                       final apellidos =
@@ -427,7 +414,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                       final email =
                           (data['email'] ?? '').toString().toLowerCase();
                       final rol = data['rol'];
-
                       final coincideBusqueda =
                           nombre.contains(_busqueda) ||
                           apellidos.contains(_busqueda) ||
@@ -435,126 +421,76 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                       final coincideRol =
                           _rolSeleccionado == 'Todos' ||
                           rol == _rolSeleccionado;
-
                       return coincideBusqueda && coincideRol;
                     }).toList();
 
-                totalUsuarios = docs.length;
-                totalAdmins =
-                    docs
-                        .where(
-                          (d) => (d.data() as Map)['rol'] == 'administrador',
-                        )
-                        .length;
-                totalNormales =
-                    docs
-                        .where((d) => (d.data() as Map)['rol'] == 'usuario')
-                        .length;
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>?;
+                    if (data == null ||
+                        data['email'] == null ||
+                        data['rol'] == null)
+                      return const SizedBox.shrink();
+                    final nombre = data['nombre'] ?? '';
+                    final apellidos = data['apellidos'] ?? '';
+                    final nombreCompleto = '$nombre $apellidos'.trim();
+                    final rol = data['rol'];
+                    final email = data['email'] ?? 'Sin email';
+                    final telefono = data['telefono'] ?? 'Sin teléfono';
 
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 4,
+                    return Card(
+                      color:
+                          rol == 'administrador'
+                              ? Colors.orange[100]
+                              : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Total: $totalUsuarios usuarios'),
-                          Text(
-                            'Administradores: $totalAdmins | Usuarios: $totalNormales',
+                      elevation: 3,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          nombreCompleto,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final data =
-                              docs[index].data() as Map<String, dynamic>?;
-                          if (data == null ||
-                              data['email'] == null ||
-                              data['rol'] == null) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final nombre = data['nombre'] ?? '';
-                          final apellidos = data['apellidos'] ?? '';
-                          final nombreCompleto = '$nombre $apellidos'.trim();
-                          final rol = data['rol'];
-                          final email = data['email'] ?? 'Sin email';
-                          final telefono = data['telefono'] ?? 'Sin teléfono';
-
-                          if (nombre.isEmpty &&
-                              apellidos.isEmpty &&
-                              email.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return Card(
-                            color:
-                                rol == 'administrador'
-                                    ? Colors.orange[100]
-                                    : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 3,
-                            margin: const EdgeInsets.symmetric(vertical: 6),
-                            child: ListTile(
-                              title: Text(
-                                nombreCompleto.isEmpty
-                                    ? 'Usuario sin nombre'
-                                    : nombreCompleto,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Email: $email'),
+                              Text('Teléfono: $telefono'),
+                              Text('Rol: $rol'),
+                            ],
+                          ),
+                        ),
+                        trailing: Wrap(
+                          spacing: 4,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.blueAccent,
                               ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Email: $email'),
-                                    Text('Teléfono: $telefono'),
-                                    Text('Rol: $rol'),
-                                  ],
-                                ),
-                              ),
-                              trailing: Wrap(
-                                spacing: 4,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.blueAccent,
-                                    ),
-                                    onPressed:
-                                        () => _mostrarFormulario(
-                                          usuarioExistente: docs[index],
-                                        ),
+                              onPressed:
+                                  () => _mostrarFormulario(
+                                    usuarioExistente: docs[index],
                                   ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed:
-                                        () => _eliminarUsuario(docs[index].id),
-                                  ),
-                                ],
-                              ),
                             ),
-                          );
-                        },
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _eliminarUsuario(docs[index].id),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             ),

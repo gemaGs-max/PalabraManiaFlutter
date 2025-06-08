@@ -1,4 +1,4 @@
-// Importación de paquetes necesarios
+// Página del minijuego de memoria mejorada y adaptativa
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:palabramania/services/firestore_service.dart';
@@ -6,35 +6,24 @@ import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Pantalla principal del minijuego de memoria
 class MemoriaPage extends StatefulWidget {
   @override
   _MemoriaPageState createState() => _MemoriaPageState();
 }
 
 class _MemoriaPageState extends State<MemoriaPage> {
-  // Lista de cartas en el juego
-  List<_CartaMemoria> _cartas = [];
+  List<_CartaMemoria> _cartas = []; // Cartas del juego
+  List<int> _seleccionadas = []; // Índices seleccionados
+  bool _bloqueado =
+      false; // Evita que se puedan seleccionar más cartas mientras se procesan
+  int _puntos = 0; // Puntos actuales
+  int _mejorPuntuacion = 0; // Mejor puntuación obtenida
 
-  // Índices de las cartas seleccionadas temporalmente
-  List<int> _seleccionadas = [];
-
-  // Evita interacciones mientras se procesan dos cartas
-  bool _bloqueado = false;
-
-  // Puntos actuales y mejor puntuación registrada
-  int _puntos = 0;
-  int _mejorPuntuacion = 0;
-
-  // Controlador para la animación de confeti
   final ConfettiController _confettiController = ConfettiController(
     duration: Duration(seconds: 2),
   );
-
-  // Reproductor de audio para efectos de sonido
   final AudioPlayer _player = AudioPlayer();
 
-  // Se ejecuta al iniciar la pantalla
   @override
   void initState() {
     super.initState();
@@ -42,7 +31,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     _cargarMejorPuntuacion();
   }
 
-  // Carga la mejor puntuación del usuario desde Firestore
+  // Carga la mejor puntuación de Firestore
   void _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -55,7 +44,6 @@ class _MemoriaPageState extends State<MemoriaPage> {
     }
   }
 
-  // Libera recursos al cerrar la pantalla
   @override
   void dispose() {
     _confettiController.dispose();
@@ -63,32 +51,31 @@ class _MemoriaPageState extends State<MemoriaPage> {
     super.dispose();
   }
 
-  // Genera las cartas del juego con pares de emojis y palabras
+  // Genera las cartas de juego
   void _generarCartas() {
     final pares = [
       {'es': '🏠', 'en': 'House'},
       {'es': '🐶', 'en': 'Dog'},
       {'es': '🍎', 'en': 'Apple'},
       {'es': '📖', 'en': 'Book'},
+      {'es': '💻', 'en': 'Computer'},
+      {'es': '🌍', 'en': 'Earth'},
     ];
 
     List<_CartaMemoria> todas = [];
-
     for (var par in pares) {
       todas.add(_CartaMemoria(texto: par['es']!, id: par['es']!));
       todas.add(_CartaMemoria(texto: par['en']!, id: par['es']!));
     }
 
-    // Mezcla aleatoria
     todas.shuffle(Random());
-
     setState(() {
       _cartas = todas;
       _puntos = 0;
     });
   }
 
-  // Lógica de selección de carta
+  // Lógica al seleccionar carta
   void _seleccionarCarta(int index) async {
     if (_bloqueado || _cartas[index].descubierta || _cartas[index].girada)
       return;
@@ -100,7 +87,6 @@ class _MemoriaPageState extends State<MemoriaPage> {
 
     if (_seleccionadas.length == 2) {
       _bloqueado = true;
-
       int i1 = _seleccionadas[0];
       int i2 = _seleccionadas[1];
       bool esPar = _cartas[i1].id == _cartas[i2].id;
@@ -110,11 +96,9 @@ class _MemoriaPageState extends State<MemoriaPage> {
         _cartas[i2].colorTemporal = esPar ? Colors.green : Colors.redAccent;
       });
 
-      // Sonido de acierto o fallo
       final sonido = esPar ? 'correcto.mp3' : 'error.mp3';
       await _player.play(AssetSource('audios/$sonido'));
 
-      // Espera antes de mostrar resultado
       Future.delayed(Duration(milliseconds: 700), () {
         setState(() {
           if (esPar) {
@@ -132,20 +116,17 @@ class _MemoriaPageState extends State<MemoriaPage> {
           _bloqueado = false;
         });
 
-        // Si se han descubierto todas, mostrar confeti y guardar puntuación
         if (_cartas.every((c) => c.descubierta)) {
           guardarPuntuacion('memoria', _puntos);
           _confettiController.play();
 
-          // Mostrar logro según puntos
           String? logro;
-          if (_puntos == 4) {
+          if (_puntos == 4)
             logro = '🥉 ¡Primera memoria completa!';
-          } else if (_puntos == 5) {
+          else if (_puntos == 5)
             logro = '🥈 ¡Buena memoria!';
-          } else if (_puntos == 6) {
+          else if (_puntos == 6)
             logro = '🥇 ¡Memoria prodigiosa!';
-          }
 
           if (logro != null) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -162,7 +143,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     }
   }
 
-  // Muestra un diálogo al finalizar el juego
+  // Muestra el diálogo final tras terminar el juego
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -195,23 +176,22 @@ class _MemoriaPageState extends State<MemoriaPage> {
     return GestureDetector(
       onTap: () => _seleccionarCarta(index),
       child: AnimatedSwitcher(
-        duration: Duration(milliseconds: 400),
+        duration: Duration(milliseconds: 300),
         transitionBuilder:
-            (child, animation) =>
-                RotationYTransition(turns: animation, child: child),
+            (child, anim) => ScaleTransition(scale: anim, child: child),
         child: Container(
           key: ValueKey(carta.girada || carta.descubierta),
           decoration: BoxDecoration(
             color:
                 carta.colorTemporal ??
-                (carta.descubierta || carta.girada
+                (carta.girada || carta.descubierta
                     ? Colors.white
-                    : Colors.deepPurple.shade400),
-            borderRadius: BorderRadius.circular(12),
+                    : Colors.deepPurple),
+            borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(
                 color: Colors.black26,
-                blurRadius: 6,
+                blurRadius: 4,
                 offset: Offset(2, 2),
               ),
             ],
@@ -227,10 +207,9 @@ class _MemoriaPageState extends State<MemoriaPage> {
             child: Text(
               carta.texto,
               style: TextStyle(
-                fontSize: 24,
+                fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20,
                 fontWeight: FontWeight.bold,
-                color:
-                    carta.descubierta ? Colors.green.shade800 : Colors.black87,
+                color: carta.descubierta ? Colors.green.shade800 : Colors.black,
               ),
             ),
           ),
@@ -239,7 +218,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     );
   }
 
-  // Construcción general de la pantalla del juego
+  // Estructura general de la pantalla
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -248,7 +227,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
           backgroundColor: Color(0xFFF3E5F5),
           appBar: AppBar(
             title: Text('🧩 Juego de Memoria'),
-            backgroundColor: Colors.purple.shade700,
+            backgroundColor: Colors.deepPurple,
             centerTitle: true,
             actions: [
               Padding(
@@ -256,7 +235,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
                 child: Center(
                   child: Text(
                     '⭐ $_puntos | 🏆 $_mejorPuntuacion',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -264,18 +243,32 @@ class _MemoriaPageState extends State<MemoriaPage> {
           ),
           body: Column(
             children: [
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Expanded(
-                child: GridView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: _cartas.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemBuilder:
-                      (context, index) => _buildCarta(_cartas[index], index),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final crossAxisCount =
+                        width > 1000
+                            ? 6
+                            : width > 600
+                            ? 4
+                            : 2;
+
+                    return GridView.builder(
+                      padding: EdgeInsets.all(16),
+                      itemCount: _cartas.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 1,
+                      ),
+                      itemBuilder:
+                          (context, index) =>
+                              _buildCarta(_cartas[index], index),
+                    );
+                  },
                 ),
               ),
             ],
@@ -286,10 +279,9 @@ class _MemoriaPageState extends State<MemoriaPage> {
           child: ConfettiWidget(
             confettiController: _confettiController,
             blastDirectionality: BlastDirectionality.explosive,
-            colors: const [Colors.purple, Colors.pink, Colors.amber],
+            colors: [Colors.purple, Colors.pink, Colors.amber],
             numberOfParticles: 20,
             gravity: 0.3,
-            shouldLoop: false,
           ),
         ),
       ],
@@ -297,7 +289,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
   }
 }
 
-// Clase para representar cada carta del juego de memoria
+// Modelo de carta
 class _CartaMemoria {
   final String texto;
   final String id;
@@ -308,7 +300,7 @@ class _CartaMemoria {
   _CartaMemoria({required this.texto, required this.id});
 }
 
-// Transición personalizada para girar las cartas en Y
+// Transición personalizada para girar las cartas en Y (efecto más visual que Scale)
 class RotationYTransition extends StatelessWidget {
   final Animation<double> turns;
   final Widget child;
@@ -318,8 +310,13 @@ class RotationYTransition extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double angle = turns.value * pi;
+    final transform =
+        Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateY(angle);
+
     return Transform(
-      transform: Matrix4.rotationY(angle),
+      transform: transform,
       alignment: Alignment.center,
       child: child,
     );

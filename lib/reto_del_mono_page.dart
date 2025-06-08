@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:palabramania/services/firestore_service.dart';
+import 'package:audioplayers/audioplayers.dart'; // 🎵 Controlador de sonido
 import 'dart:math';
 
 class RetoDelMonoPage extends StatefulWidget {
@@ -63,11 +64,19 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
     'Keep going :)',
   ];
 
+  final AudioPlayer _audioPlayer = AudioPlayer(); // 🎵 Instancia de sonido
+
   @override
   void initState() {
     super.initState();
     // Al iniciar, seleccionamos 3 preguntas aleatorias
     _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose(); // Limpia el reproductor al cerrar
+    super.dispose();
   }
 
   // Función para mezclar y obtener una lista limitada de preguntas
@@ -81,7 +90,7 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
   }
 
   // Lógica para cuando el usuario responde
-  void _responder(String seleccionada) {
+  void _responder(String seleccionada) async {
     final pregunta = _preguntasSeleccionadas[_preguntaActual];
     final esCorrecta = seleccionada == pregunta['respuesta'];
 
@@ -92,7 +101,14 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
       } else {
         _fraseMono = _frasesFallo[Random().nextInt(_frasesFallo.length)];
       }
+    });
 
+    // 🎵 Reproducir sonido correspondiente
+    await _audioPlayer.play(
+      AssetSource(esCorrecta ? 'audios/correcto.mp3' : 'audios/error.mp3'),
+    );
+
+    setState(() {
       if (_preguntaActual < _preguntasSeleccionadas.length - 1) {
         _preguntaActual++; // Pasar a la siguiente pregunta
       } else {
@@ -131,12 +147,12 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Imagen del mono
+            // 🐵 Imagen del mono
             Image.asset('assets/images/mono.png', height: 120),
 
             const SizedBox(height: 12),
 
-            // Frase que dice el mono
+            // 💬 Frase que dice el mono
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               child: Text(
@@ -151,7 +167,7 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
 
             const SizedBox(height: 20),
 
-            // Pregunta actual
+            // ❓ Pregunta actual
             Text(
               pregunta['pregunta'],
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -160,7 +176,7 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
 
             const SizedBox(height: 20),
 
-            // Opciones de respuesta
+            // 🟦 Opciones de respuesta
             ...List.generate(pregunta['opciones'].length, (index) {
               final opcion = pregunta['opciones'][index];
               return Padding(
@@ -176,7 +192,7 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
               );
             }),
 
-            // Si ya ha terminado el juego, mostramos la puntuación final
+            // 🏁 Resultado final + botón para reiniciar
             if (_mostrarBoton) ...[
               const SizedBox(height: 20),
               Text('Score: $_puntuacion / ${_preguntasSeleccionadas.length}'),

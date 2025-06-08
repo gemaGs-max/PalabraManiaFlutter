@@ -1,12 +1,11 @@
-// Importación de paquetes necesarios
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:confetti/confetti.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:palabramania/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'widgets/personaje_habla.dart'; // Mono que habla
 
-// Widget principal del juego
 class OrdenaFrasePage extends StatefulWidget {
   const OrdenaFrasePage({super.key});
 
@@ -15,7 +14,6 @@ class OrdenaFrasePage extends StatefulWidget {
 }
 
 class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
-  // Lista de frases con su traducción en español e inglés
   final List<Map<String, String>> _frases = [
     {'es': '¿Cómo estás?', 'en': 'How are you'},
     {'es': 'Yo soy estudiante', 'en': 'I am a student'},
@@ -29,31 +27,21 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     {'es': 'Vamos al parque mañana', 'en': 'We go to the park tomorrow'},
   ];
 
-  // Frase que se está mostrando actualmente
   late Map<String, String> _fraseActual;
-
-  // Lista de frases que aún no se han jugado
   List<Map<String, String>> _frasesRestantes = [];
-
-  // Palabras desordenadas de la frase actual
   List<String> _palabrasDesordenadas = [];
-
-  // Palabras que el usuario ha ido seleccionando
   List<String> _respuestaUsuario = [];
 
-  // Controlador para confeti
   late ConfettiController _confettiController;
-
-  // Reproductor de audio
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  // Estados para mostrar resultado y verificar si es correcto
   bool _mostrarResultado = false;
   bool _esCorrecto = false;
 
-  // Puntos actuales y mejor puntuación registrada
   int _puntos = 0;
   int _mejorPuntuacion = 0;
+
+  String _mensajeMono = ''; // Frase aleatoria del mono
 
   @override
   void initState() {
@@ -62,11 +50,11 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       duration: const Duration(seconds: 2),
     );
     _cargarMejorPuntuacion();
-    _frasesRestantes = List.from(_frases)..shuffle(); // Mezcla las frases
-    _nuevaFrase(); // Carga la primera frase
+    _frasesRestantes = List.from(_frases)..shuffle();
+    _nuevaFrase();
   }
 
-  // Carga la mejor puntuación del usuario desde Firestore
+  // Cargar la mejor puntuación del usuario desde Firestore
   Future<void> _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -79,12 +67,13 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     }
   }
 
-  // Selecciona una nueva frase y la desordena
+  // Cargar una nueva frase y mezclarla
   void _nuevaFrase() {
     setState(() {
       _mostrarResultado = false;
       _esCorrecto = false;
       _respuestaUsuario.clear();
+      _mensajeMono = '';
 
       if (_frasesRestantes.isEmpty) {
         _mostrarDialogoFinal();
@@ -96,7 +85,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     });
   }
 
-  // Muestra un diálogo al terminar todas las frases
+  // Diálogo al completar todas las frases
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -110,8 +99,8 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Cierra diálogo
-                  Navigator.pop(context); // Regresa al menú
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 },
                 child: const Text('Salir'),
               ),
@@ -131,7 +120,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     );
   }
 
-  // Añade la palabra seleccionada a la respuesta del usuario
+  // Añadir palabra a la respuesta del usuario
   void _seleccionarPalabra(String palabra) {
     if (_mostrarResultado) return;
 
@@ -141,13 +130,43 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     });
   }
 
-  // Verifica si la frase es correcta
+  // Quitar la última palabra seleccionada
+  void _quitarUltimaPalabra() {
+    if (_respuestaUsuario.isNotEmpty && !_mostrarResultado) {
+      setState(() {
+        String ultima = _respuestaUsuario.removeLast();
+        _palabrasDesordenadas.add(ultima);
+      });
+    }
+  }
+
+  // Verificar si la frase es correcta
   void _verificar() async {
+    // Frases aleatorias del mono al acertar
+    final frasesCorrecto = [
+      '¡Bien hecho! 👏',
+      '¡Eres un crack! 💥',
+      '¡Lo clavaste! 🎯',
+      '¡Perfecto! 🧠',
+      '¡Sigue así! 🔝',
+      '🥉 ¡Buen comienzo!',
+      '🥈 ¡Muy bien! Sigue así 💪',
+      '🥇 ¡Increíble! Nivel experto 🔥',
+    ];
+
+    // Frases aleatorias del mono al fallar
+    final frasesError = [
+      'Uy... casi 😅',
+      '¡Vamos, tú puedes! 💪',
+      'No pasa nada, intenta otra vez 🙌',
+      '¡Ánimo! 💥',
+      'Respira hondo y vuelve a intentarlo 😌',
+    ];
+
     if (_respuestaUsuario.join(' ') == _fraseActual['en']) {
       _esCorrecto = true;
       _puntos++;
 
-      // Si se supera la mejor puntuación, se guarda
       if (_puntos > _mejorPuntuacion) {
         _mejorPuntuacion = _puntos;
         await guardarPuntuacion('ordena_frase', _puntos);
@@ -155,42 +174,19 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
 
       _confettiController.play();
       await _audioPlayer.play(AssetSource('audios/correcto.mp3'));
-
-      // Logros especiales según los puntos
-      String? mensajeEspecial;
-      if (_puntos == 3) {
-        mensajeEspecial = '🥉 ¡Buen comienzo!';
-      } else if (_puntos == 5) {
-        mensajeEspecial = '🥈 ¡Muy bien! Sigue así 💪';
-      } else if (_puntos == 10) {
-        mensajeEspecial = '🥇 ¡Increíble! Nivel experto 🔥';
-      }
-
-      if (mensajeEspecial != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(mensajeEspecial),
-            backgroundColor: Colors.deepPurple,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      _mensajeMono = (frasesCorrecto..shuffle()).first;
     } else {
       _esCorrecto = false;
       await _audioPlayer.play(AssetSource('audios/error.mp3'));
+      _mensajeMono = (frasesError..shuffle()).first;
     }
 
-    setState(() => _mostrarResultado = true);
+    setState(() {
+      _mostrarResultado = true;
+    });
   }
 
-  @override
-  void dispose() {
-    _confettiController.dispose();
-    _audioPlayer.dispose();
-    super.dispose();
-  }
-
-  // Construye los botones de palabras (respuesta o selección)
+  // Construir botones de palabras
   Widget _buildPalabras(List<String> palabras, void Function(String) onTap) {
     return Wrap(
       spacing: 8,
@@ -211,7 +207,6 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 3,
                   ),
                   child: Text(p, style: const TextStyle(fontSize: 18)),
                 ),
@@ -225,13 +220,12 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: const Color(0xFFFFF9C4),
+          backgroundColor: Colors.amber.shade100,
           appBar: AppBar(
             backgroundColor: Colors.amber.shade700,
             centerTitle: true,
             title: Row(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('🔤 Ordena la frase'),
                 const SizedBox(width: 16),
@@ -252,72 +246,99 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
               ],
             ),
           ),
-          body: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Muestra la frase en español
-                Text(
-                  'Traduce: "${_fraseActual['es']}"',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                // Muestra la respuesta actual del usuario
-                _buildPalabras(_respuestaUsuario, (_) {}),
-                const SizedBox(height: 16),
-                // Muestra las palabras disponibles para seleccionar
-                _buildPalabras(_palabrasDesordenadas, _seleccionarPalabra),
-                const SizedBox(height: 30),
-                if (!_mostrarResultado)
-                  ElevatedButton(
-                    onPressed: _verificar,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 12,
+          body: SingleChildScrollView(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Texto de traducción
+                    Text(
+                      'Traduce: "${_fraseActual['es']}"',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    child: const Text('Verificar'),
-                  ),
-                if (_mostrarResultado)
-                  Column(
-                    children: [
-                      Text(
-                        _esCorrecto ? '✅ ¡Correcto!' : '❌ Intenta de nuevo',
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: _esCorrecto ? Colors.green : Colors.red,
-                        ),
+                    const SizedBox(height: 20),
+
+                    // Palabras seleccionadas por el usuario
+                    _buildPalabras(_respuestaUsuario, (_) {}),
+
+                    const SizedBox(height: 8),
+
+                    // Botón para quitar la última palabra
+                    if (_respuestaUsuario.isNotEmpty && !_mostrarResultado)
+                      TextButton(
+                        onPressed: _quitarUltimaPalabra,
+                        child: const Text('⏪ Quitar última palabra'),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Mejor puntuación: $_mejorPuntuacion ⭐',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+
+                    const SizedBox(height: 12),
+
+                    // Palabras disponibles para seleccionar
+                    _buildPalabras(_palabrasDesordenadas, _seleccionarPalabra),
+
+                    const SizedBox(height: 30),
+
+                    // Botones de acción
+                    if (!_mostrarResultado)
                       ElevatedButton(
-                        onPressed: _nuevaFrase,
+                        onPressed: _verificar,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepOrange,
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 30,
+                            vertical: 12,
+                          ),
                         ),
-                        child: const Text('Otra frase'),
+                        child: const Text('Verificar'),
                       ),
-                    ],
-                  ),
-              ],
+
+                    if (_mostrarResultado)
+                      Column(
+                        children: [
+                          Text(
+                            _esCorrecto ? '✅ ¡Correcto!' : '❌ Intenta de nuevo',
+                            style: TextStyle(
+                              fontSize: 22,
+                              color: _esCorrecto ? Colors.green : Colors.red,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Mejor puntuación: $_mejorPuntuacion ⭐',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _nuevaFrase,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepOrange,
+                            ),
+                            child: const Text('Otra frase'),
+                          ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // Mono motivador con frase
+                    if (_mensajeMono.isNotEmpty)
+                      PersonajeHabla(mensaje: _mensajeMono),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-        // Confeti que se muestra al acertar
+
+        // Confeti animado en el centro superior
         Align(
           alignment: Alignment.topCenter,
           child: ConfettiWidget(
