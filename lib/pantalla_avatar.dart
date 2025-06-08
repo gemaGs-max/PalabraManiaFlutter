@@ -15,10 +15,10 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
     'avatar2.png',
     'avatar3.png',
     'avatar4.jpg',
-    'avatar5.png',
-    'avatar6.png',
-    'avatar7.png',
-    'avatar8.png',
+    'avatar5.jpg',
+    'avatar6.jpg',
+    'avatar7.jpg',
+    'avatar8.jpg',
   ];
 
   String? _seleccionado;

@@ -1,11 +1,11 @@
-// ignore_for_file: use_build_context_synchronously
+// pantalla_admin.dart
+// Pantalla de administrador con CRUD, validación de teléfono, exportación y manejo de errores en Flutter Web
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+import 'dart:html' as html;
 
 class PantallaAdmin extends StatefulWidget {
   const PantallaAdmin({super.key});
@@ -16,13 +16,8 @@ class PantallaAdmin extends StatefulWidget {
 
 class _PantallaAdminState extends State<PantallaAdmin> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
   String _busqueda = '';
   String _rolSeleccionado = 'Todos';
-
-  int totalUsuarios = 0;
-  int totalAdmins = 0;
-  int totalNormales = 0;
 
   void _mostrarFormulario({DocumentSnapshot? usuarioExistente}) {
     final nombreCtrl = TextEditingController(
@@ -61,6 +56,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   TextField(
                     controller: telefonoCtrl,
                     decoration: const InputDecoration(labelText: 'Teléfono'),
+                    keyboardType: TextInputType.phone,
                   ),
                   TextField(
                     controller: emailCtrl,
@@ -74,8 +70,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                         labelText: 'Contraseña',
                       ),
                     ),
-                  DropdownButton<String>(
+                  DropdownButtonFormField<String>(
                     value: rol,
+                    decoration: const InputDecoration(labelText: 'Rol'),
                     onChanged:
                         (value) => setState(() => rol = value ?? 'usuario'),
                     items: const [
@@ -93,6 +90,27 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ),
             ),
             actions: [
+              if (usuarioExistente != null)
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      await FirebaseAuth.instance.sendPasswordResetEmail(
+                        email: emailCtrl.text.trim(),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Email de restablecimiento enviado'),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                      );
+                    }
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Restablecer contraseña'),
+                ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancelar'),
@@ -101,18 +119,48 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 onPressed: () async {
                   final nombre = nombreCtrl.text.trim();
                   final apellidos = apellidosCtrl.text.trim();
-                  final telefono = telefonoCtrl.text.trim();
+                  final telefono = telefonoCtrl.text.replaceAll(
+                    RegExp(r'\s+'),
+                    '',
+                  );
                   final email = emailCtrl.text.trim();
                   final password = passCtrl.text.trim();
 
+                  // Validación del teléfono: debe tener exactamente 9 dígitos numéricos
+                  if (!RegExp(r'^\d{9}$').hasMatch(telefono)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '⚠️ El teléfono debe tener exactamente 9 dígitos.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
                   if (usuarioExistente == null) {
+                    // Validaciones básicas
+                    if (email.isEmpty ||
+                        password.length < 6 ||
+                        nombre.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            '⚠️ Email, contraseña (mín. 6) y nombre son obligatorios.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
                     try {
+                      // Crear usuario con Firebase Auth
                       final cred = await FirebaseAuth.instance
                           .createUserWithEmailAndPassword(
                             email: email,
                             password: password,
                           );
-
+                      // Guardar datos en Firestore
                       await _db.collection('usuarios').doc(cred.user!.uid).set({
                         'nombre': nombre,
                         'apellidos': apellidos,
@@ -121,32 +169,54 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                         'rol': rol,
                         'puntos': 0,
                       });
-
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('✅ Usuario creado correctamente'),
                         ),
                       );
                     } on FirebaseAuthException catch (e) {
+                      String mensaje = '❌ Error desconocido';
+                      if (e.code == 'email-already-in-use')
+                        mensaje = '⚠️ El correo ya está en uso.';
+                      else if (e.code == 'invalid-email')
+                        mensaje = '⚠️ El correo no es válido.';
+                      else if (e.code == 'weak-password')
+                        mensaje = '⚠️ La contraseña es demasiado débil.';
+                      else
+                        mensaje = '❌ Error: ${e.message}';
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(mensaje)));
+                    } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('⚠️ Error: ${e.message}')),
+                        SnackBar(content: Text('❌ Error: ${e.toString()}')),
                       );
                     }
                   } else {
-                    await _db
-                        .collection('usuarios')
-                        .doc(usuarioExistente.id)
-                        .update({
-                          'nombre': nombre,
-                          'apellidos': apellidos,
-                          'telefono': telefono,
-                          'email': email,
-                          'rol': rol,
-                        });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✅ Usuario actualizado')),
-                    );
+                    // Actualizar usuario existente
+                    try {
+                      await _db
+                          .collection('usuarios')
+                          .doc(usuarioExistente.id)
+                          .update({
+                            'nombre': nombre,
+                            'apellidos': apellidos,
+                            'telefono': telefono,
+                            'email': email,
+                            'rol': rol,
+                          });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Usuario actualizado correctamente'),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                      );
+                    }
                   }
+
                   Navigator.pop(context);
                   setState(() {});
                 },
@@ -171,7 +241,16 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ),
               TextButton(
                 onPressed: () async {
-                  await _db.collection('usuarios').doc(id).delete();
+                  try {
+                    await _db.collection('usuarios').doc(id).delete();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ Usuario eliminado')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                    );
+                  }
                   Navigator.pop(context);
                   setState(() {});
                 },
@@ -188,34 +267,22 @@ class _PantallaAdminState extends State<PantallaAdmin> {
   Future<void> _exportarCSV(List<QueryDocumentSnapshot> docs) async {
     final buffer = StringBuffer();
     buffer.writeln('Nombre,Apellidos,Email,Teléfono,Rol,Puntos');
-
     for (var doc in docs) {
-      final data = doc.data() as Map<String, dynamic>?;
-      if (data == null) continue;
-
+      final data = doc.data() as Map<String, dynamic>? ?? {};
       final nombre = data['nombre'] ?? '';
       final apellidos = data['apellidos'] ?? '';
       final email = data['email'] ?? '';
       final telefono = data['telefono'] ?? '';
       final rol = data['rol'] ?? '';
       final puntos = data['puntos'] ?? data['puntosTotales'] ?? '0';
-
       buffer.writeln('$nombre,$apellidos,$email,$telefono,$rol,$puntos');
     }
-
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/usuarios_exportados.csv');
-    await file.writeAsString(buffer.toString());
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Archivo exportado correctamente')),
-    );
-
-    await Share.shareXFiles([
-      XFile(file.path),
-    ], text: 'Usuarios exportados desde PalabraManía');
+    final blob = html.Blob([utf8.encode(buffer.toString())]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', 'usuarios_exportados.csv')
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 
   Future<void> _exportarTop10RankingCSV() async {
@@ -225,39 +292,27 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             .orderBy('puntos', descending: true)
             .limit(10)
             .get();
-
     final buffer = StringBuffer();
     buffer.writeln('Ranking,Nombre,Apellidos,Email,Puntos');
-
     for (int i = 0; i < snapshot.docs.length; i++) {
       final data = snapshot.docs[i].data() as Map<String, dynamic>? ?? {};
       final nombre = data['nombre'] ?? '';
       final apellidos = data['apellidos'] ?? '';
       final email = data['email'] ?? '';
       final puntos = data['puntos'] ?? data['puntosTotales'] ?? '0';
-
       buffer.writeln('${i + 1},$nombre,$apellidos,$email,$puntos');
     }
-
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/top10_ranking_palabramania.csv');
-    await file.writeAsString(buffer.toString());
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Top 10 exportado correctamente')),
-    );
-
-    await Share.shareXFiles([
-      XFile(file.path),
-    ], text: 'Top 10 usuarios PalabraManía');
+    final blob = html.Blob([utf8.encode(buffer.toString())]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', 'top10_ranking.csv')
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F8E9),
       appBar: AppBar(
         title: const Text('Panel de Administrador'),
         backgroundColor: Colors.deepOrangeAccent,
@@ -273,7 +328,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           IconButton(
             icon: const Icon(Icons.emoji_events),
             tooltip: 'Exportar TOP 10',
-            onPressed: () async => await _exportarTop10RankingCSV(),
+            onPressed: _exportarTop10RankingCSV,
           ),
         ],
       ),
@@ -339,23 +394,16 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return const Center(child: CircularProgressIndicator());
-
                 final docs =
                     snapshot.data!.docs.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>?;
-                      if (data == null ||
-                          data['email'] == null ||
-                          data['rol'] == null)
-                        return false;
-
-                      final nombre =
-                          (data['nombre'] ?? '').toString().toLowerCase();
-                      final apellidos =
-                          (data['apellidos'] ?? '').toString().toLowerCase();
+                      final data = doc.data() as Map<String, dynamic>? ?? {};
                       final email =
-                          (data['email'] ?? '').toString().toLowerCase();
+                          data['email']?.toString().toLowerCase() ?? '';
+                      final nombre =
+                          data['nombre']?.toString().toLowerCase() ?? '';
+                      final apellidos =
+                          data['apellidos']?.toString().toLowerCase() ?? '';
                       final rol = data['rol'];
-
                       final coincideBusqueda =
                           nombre.contains(_busqueda) ||
                           apellidos.contains(_busqueda) ||
@@ -363,124 +411,57 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                       final coincideRol =
                           _rolSeleccionado == 'Todos' ||
                           rol == _rolSeleccionado;
-
                       return coincideBusqueda && coincideRol;
                     }).toList();
 
-                totalUsuarios = docs.length;
-                totalAdmins =
-                    docs
-                        .where(
-                          (d) => (d.data() as Map)['rol'] == 'administrador',
-                        )
-                        .length;
-                totalNormales =
-                    docs
-                        .where((d) => (d.data() as Map)['rol'] == 'usuario')
-                        .length;
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 4,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Total: $totalUsuarios usuarios'),
-                          Text(
-                            'Administradores: $totalAdmins | Usuarios: $totalNormales',
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final data =
-                              docs[index].data() as Map<String, dynamic>?;
-                          if (data == null ||
-                              data['email'] == null ||
-                              data['rol'] == null)
-                            return const SizedBox.shrink();
-
-                          final nombre = data['nombre'] ?? '';
-                          final apellidos = data['apellidos'] ?? '';
-                          final nombreCompleto = '$nombre $apellidos'.trim();
-                          final rol = data['rol'];
-                          final email = data['email'] ?? 'Sin email';
-                          final telefono = data['telefono'] ?? 'Sin teléfono';
-
-                          if (nombre.isEmpty &&
-                              apellidos.isEmpty &&
-                              email.isEmpty)
-                            return const SizedBox.shrink();
-
-                          return Card(
-                            color:
-                                rol == 'administrador'
-                                    ? Colors.orange[100]
-                                    : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 3,
-                            margin: const EdgeInsets.symmetric(vertical: 6),
-                            child: ListTile(
-                              title: Text(
-                                nombreCompleto.isEmpty
-                                    ? 'Usuario sin nombre'
-                                    : nombreCompleto,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Email: $email'),
-                                    Text('Teléfono: $telefono'),
-                                    Text('Rol: $rol'),
-                                  ],
-                                ),
-                              ),
-                              trailing: Wrap(
-                                spacing: 4,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.blueAccent,
-                                    ),
-                                    onPressed:
-                                        () => _mostrarFormulario(
-                                          usuarioExistente: docs[index],
-                                        ),
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final nombre = data['nombre'] ?? '';
+                    final apellidos = data['apellidos'] ?? '';
+                    final email = data['email'] ?? '';
+                    final telefono = data['telefono'] ?? '';
+                    final rol = data['rol'] ?? '';
+                    return Card(
+                      color:
+                          rol == 'administrador'
+                              ? Colors.orange.shade100
+                              : null,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          '$nombre $apellidos',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Email: $email'),
+                            Text('Teléfono: $telefono'),
+                            Text('Rol: $rol'),
+                          ],
+                        ),
+                        trailing: Wrap(
+                          spacing: 4,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed:
+                                  () => _mostrarFormulario(
+                                    usuarioExistente: docs[index],
                                   ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed:
-                                        () => _eliminarUsuario(docs[index].id),
-                                  ),
-                                ],
-                              ),
                             ),
-                          );
-                        },
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _eliminarUsuario(docs[index].id),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             ),

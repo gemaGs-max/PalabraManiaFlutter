@@ -1,4 +1,3 @@
-// flashcards.dart (actualizado con el mono interactivo)
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:palabramania/services/firestore_service.dart';
@@ -7,12 +6,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'widgets/personaje_habla.dart';
 
+// Pantalla principal del minijuego Flashcards
 class FlashcardsPage extends StatefulWidget {
+  const FlashcardsPage({super.key});
+
   @override
   _FlashcardsPageState createState() => _FlashcardsPageState();
 }
 
 class _FlashcardsPageState extends State<FlashcardsPage> {
+  // Lista original de tarjetas con palabras
   final List<Map<String, String>> _flashcardsOriginales = [
     {'front': 'Manzana', 'back': 'Apple'},
     {'front': 'Perro', 'back': 'Dog'},
@@ -21,19 +24,22 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     {'front': 'Escuela', 'back': 'School'},
   ];
 
-  late List<Map<String, String>> _flashcards;
+  late List<Map<String, String>> _flashcards; // Lista mezclada para jugar
   int _currentIndex = 0;
   int _puntos = 0;
   int _mejorPuntuacion = 0;
   int _tiempoRestante = 10;
+
   bool _mostrarFeedback = false;
   bool _bloquear = false;
   String _feedback = '';
-  String _mensajeMono = "\u00a1Vamos a empezar!";
+  String _mensajeMono = "¡Vamos a empezar!";
   Timer? _timer;
+
+  // Controladores
   late ConfettiController _confettiController;
   final TextEditingController _respuestaController = TextEditingController();
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player = AudioPlayer(); // 🎵 Controlador de sonido
 
   @override
   void initState() {
@@ -45,6 +51,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _reiniciarJuego();
   }
 
+  // Cargar la mejor puntuación guardada en Firestore
   void _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -57,18 +64,19 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     }
   }
 
+  // Reiniciar variables y comenzar una nueva ronda
   void _reiniciarJuego() {
-    _flashcards = List.from(_flashcardsOriginales);
-    _flashcards.shuffle();
+    _flashcards = List.from(_flashcardsOriginales)..shuffle();
     _currentIndex = 0;
     _puntos = 0;
     _mostrarFeedback = false;
     _bloquear = false;
-    _mensajeMono = "\u00a1Vamos a empezar!";
+    _mensajeMono = "¡Vamos a empezar!";
     _respuestaController.clear();
     _iniciarTemporizador();
   }
 
+  // Iniciar temporizador de cada tarjeta
   void _iniciarTemporizador() {
     _timer?.cancel();
     _tiempoRestante = 10;
@@ -83,42 +91,53 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     });
   }
 
+  // Mostrar la respuesta automáticamente si se acaba el tiempo
   void _mostrarRespuestaAutomatica() {
     final correcta = _flashcards[_currentIndex]['back']!;
+    _player.play(
+      AssetSource('sonidos/incorrecto.mp3'),
+    ); // ❌ Sonido fallo por tiempo
     setState(() {
       _feedback = '⏰ Tiempo agotado. Era: $correcta';
       _mostrarFeedback = true;
       _bloquear = true;
-      _mensajeMono = "\u00a1Oh no! Se acab\u00f3 el tiempo.";
+      _mensajeMono = "¡Oh no! Se acabó el tiempo.";
     });
     Future.delayed(Duration(seconds: 2), _pasarSiguiente);
   }
 
+  // Comprobar si la respuesta escrita es correcta
   void _comprobarRespuesta() {
     if (_bloquear) return;
     final correcta = _flashcards[_currentIndex]['back']!.toLowerCase().trim();
     final respuesta = _respuestaController.text.toLowerCase().trim();
     _timer?.cancel();
+
     setState(() {
       if (respuesta == correcta) {
         _puntos++;
-        _feedback = '🎉 \u00a1Correcto!';
-        _mensajeMono = "\u00a1Genial! \u00a1Sigue as\u00ed!";
+        _feedback = '🎉 ¡Correcto!';
+        _mensajeMono = "¡Genial! ¡Sigue así!";
+        _player.play(AssetSource('sonidos/correcto.mp3')); // ✅ Sonido acierto
       } else {
         _feedback = '❌ Era: ${_flashcards[_currentIndex]['back']}';
-        _mensajeMono = "\u00a1Ups! Intenta con la siguiente.";
+        _mensajeMono = "¡Ups! Intenta con la siguiente.";
+        _player.play(AssetSource('sonidos/incorrecto.mp3')); // ❌ Sonido fallo
       }
       _mostrarFeedback = true;
       _bloquear = true;
     });
+
     Future.delayed(Duration(seconds: 2), _pasarSiguiente);
   }
 
+  // Pasar a la siguiente tarjeta
   void _pasarSiguiente() {
     if (_currentIndex + 1 >= _flashcards.length) {
       guardarPuntuacion('flashcards', _puntos);
       _confettiController.play();
-      _mensajeMono = "\u00a1Has terminado! \u00bfRepetimos?";
+      _player.play(AssetSource('sonidos/final.mp3')); // 🎉 Sonido final
+      _mensajeMono = "¡Has terminado! ¿Repetimos?";
       _mostrarDialogoFinal();
       return;
     }
@@ -131,6 +150,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _iniciarTemporizador();
   }
 
+  // Mostrar diálogo final con resumen
   void _mostrarDialogoFinal() {
     _timer?.cancel();
     showDialog(
@@ -140,7 +160,9 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
           (context) => AlertDialog(
             title: const Text('✅ Juego completado'),
             content: Text(
-              'Has conseguido $_puntos puntos.\nTu mejor puntuaci\u00f3n: $_mejorPuntuacion\n\u00bfQuieres reintentar?',
+              'Has conseguido $_puntos puntos.\n'
+              'Tu mejor puntuación: $_mejorPuntuacion\n'
+              '¿Quieres reintentar?',
             ),
             actions: [
               TextButton(
@@ -169,13 +191,14 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
     _respuestaController.dispose();
     _timer?.cancel();
     _confettiController.dispose();
-    _player.dispose();
+    _player.dispose(); // Libera el reproductor de sonido
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final currentCard = _flashcards[_currentIndex];
+
     return Stack(
       children: [
         Scaffold(
@@ -190,7 +213,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             child: Column(
               children: [
                 Text(
-                  '🏆 Mejor puntuaci\u00f3n: $_mejorPuntuacion',
+                  '🏆 Mejor puntuación: $_mejorPuntuacion',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -203,6 +226,22 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   backgroundColor: Colors.teal.shade100,
                   color: Colors.teal.shade700,
                   minHeight: 8,
+                ),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: _tiempoRestante / 10,
+                  backgroundColor: Colors.grey.shade300,
+                  color: Colors.redAccent,
+                  minHeight: 8,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '⏳ Tiempo restante: $_tiempoRestante s',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Card(
@@ -232,7 +271,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
                   controller: _respuestaController,
                   enabled: !_bloquear,
                   decoration: InputDecoration(
-                    hintText: 'Escribe la palabra en ingl\u00e9s',
+                    hintText: 'Escribe la palabra en inglés',
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -281,6 +320,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             ),
           ),
         ),
+        // 🎊 Confetti visual al terminar el juego
         Align(
           alignment: Alignment.topCenter,
           child: ConfettiWidget(
@@ -294,10 +334,11 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             shouldLoop: false,
           ),
         ),
+        // 🐵 Mono animado que da mensajes de ánimo
         Positioned(
           bottom: 12,
           right: 12,
-          child: PersonajeHabla(mensaje: _mensajeMono),
+          child: PersonajeHabla(texto: _mensajeMono),
         ),
       ],
     );

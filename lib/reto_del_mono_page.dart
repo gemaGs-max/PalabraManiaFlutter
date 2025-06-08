@@ -10,38 +10,47 @@ class RetoDelMonoPage extends StatefulWidget {
 }
 
 class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
+  // Preguntas sobre inglés básico: vocabulario y comprensión
   final List<Map<String, dynamic>> _preguntas = [
     {
-      'pregunta': '¿Cuál es la capital de Francia?',
-      'opciones': ['Londres', 'Madrid', 'París'],
-      'respuesta': 'París',
+      'pregunta': 'What is the meaning of "apple"?',
+      'opciones': ['Manzana', 'Pera', 'Banana'],
+      'respuesta': 'Manzana',
     },
     {
-      'pregunta': '¿Qué animal hace "miau"?',
-      'opciones': ['Perro', 'Gato', 'Pájaro'],
-      'respuesta': 'Gato',
+      'pregunta': 'Choose the correct translation: "I am a student."',
+      'opciones': [
+        'Yo soy un estudiante',
+        'Tú eres un profesor',
+        'Ella es una doctora',
+      ],
+      'respuesta': 'Yo soy un estudiante',
     },
     {
-      'pregunta': '¿Cuántos colores tiene el arcoíris?',
-      'opciones': ['5', '7', '9'],
-      'respuesta': '7',
+      'pregunta': 'What is the opposite of "hot"?',
+      'opciones': ['Warm', 'Cold', 'Dark'],
+      'respuesta': 'Cold',
     },
     {
-      'pregunta': '¿Qué planeta es conocido como el planeta rojo?',
-      'opciones': ['Marte', 'Venus', 'Saturno'],
-      'respuesta': 'Marte',
+      'pregunta': 'What does "Good night" mean?',
+      'opciones': ['Buenos días', 'Buenas noches', 'Buenas tardes'],
+      'respuesta': 'Buenas noches',
     },
     {
-      'pregunta': '¿Cuál es el idioma más hablado del mundo?',
-      'opciones': ['Español', 'Inglés', 'Chino'],
-      'respuesta': 'Chino',
+      'pregunta': 'Translate: "Blue, green, red"',
+      'opciones': [
+        'Rojo, amarillo, rosa',
+        'Azul, verde, rojo',
+        'Marrón, gris, negro',
+      ],
+      'respuesta': 'Azul, verde, rojo',
     },
   ];
 
   late List<Map<String, dynamic>> _preguntasSeleccionadas;
   int _preguntaActual = 0;
   int _puntuacion = 0;
-  String _fraseMono = '¡Hola! ¿Preparada para el reto?';
+  String _fraseMono = '🐵 ¡Hola! ¿Preparada para el reto en inglés?';
   bool _mostrarBoton = false;
 
   final List<String> _frasesExito = [
@@ -61,9 +70,12 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
   @override
   void initState() {
     super.initState();
-    _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
+    _preguntasSeleccionadas = _obtenerPreguntasAleatorias(
+      3,
+    ); // Selecciona 3 aleatorias
   }
 
+  // Baraja las preguntas y escoge una cantidad
   List<Map<String, dynamic>> _obtenerPreguntasAleatorias(int cantidad) {
     final random = Random();
     final preguntasCopia = List<Map<String, dynamic>>.from(_preguntas);
@@ -71,6 +83,7 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
     return preguntasCopia.take(cantidad).toList();
   }
 
+  // Valida la respuesta seleccionada
   void _responder(String seleccionada) {
     final pregunta = _preguntasSeleccionadas[_preguntaActual];
     final esCorrecta = seleccionada == pregunta['respuesta'];
@@ -87,17 +100,18 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
         _preguntaActual++;
       } else {
         _mostrarBoton = true;
-        guardarPuntuacion('retoMono', _puntuacion);
+        guardarPuntuacion('retoMono', _puntuacion); // Guarda en Firestore
       }
     });
   }
 
+  // Reinicia todo el juego
   void _reiniciarJuego() {
     setState(() {
       _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
       _preguntaActual = 0;
       _puntuacion = 0;
-      _fraseMono = '¡Hola! ¿Preparada para el reto?';
+      _fraseMono = '🐵 ¡Hola! ¿Preparada para el reto en inglés?';
       _mostrarBoton = false;
     });
   }
@@ -117,8 +131,12 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/mono.png', height: 120),
+            Image.asset(
+              'assets/images/mono.png',
+              height: 120,
+            ), // Imagen del mono
             const SizedBox(height: 12),
+            // Frase del mono animada
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               child: Text(
@@ -131,12 +149,14 @@ class _RetoDelMonoPageState extends State<RetoDelMonoPage> {
               ),
             ),
             const SizedBox(height: 20),
+            // Pregunta actual
             Text(
               pregunta['pregunta'],
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            // Opciones
             ...List.generate(pregunta['opciones'].length, (index) {
               final opcion = pregunta['opciones'][index];
               return Padding(

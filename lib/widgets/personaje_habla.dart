@@ -1,36 +1,46 @@
 import 'package:flutter/material.dart';
 
+/// Widget que muestra un personaje (mono) con un mensaje encima.
+/// Útil para dar retroalimentación animada en los minijuegos.
 class PersonajeHabla extends StatelessWidget {
-  final String mensaje;
+  /// Texto que dirá el personaje.
+  final String texto;
 
-  const PersonajeHabla({super.key, required this.mensaje});
+  /// Constructor que requiere el texto a mostrar.
+  const PersonajeHabla({super.key, required this.texto});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
+        // Burbujita del mensaje
         Padding(
           padding: const EdgeInsets.only(bottom: 70, right: 12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.yellow.shade100,
+              color: Colors.orange.shade100, // Fondo suave para la burbuja
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: Colors.black26,
                   blurRadius: 4,
                   offset: Offset(2, 2),
                 ),
               ],
             ),
             child: Text(
-              mensaje,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              texto,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
         ),
+        // Imagen del mono
         Padding(
           padding: const EdgeInsets.only(right: 10, bottom: 10),
           child: Image.asset(
