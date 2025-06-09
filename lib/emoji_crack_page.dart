@@ -162,7 +162,7 @@ class _EmojiCrackPageState extends State<EmojiCrackPage> {
                   child: ElevatedButton(
                     onPressed: () => _responder(opcion),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: const Color.fromARGB(255, 183, 120, 173),
                       minimumSize: const Size.fromHeight(50),
                     ),
                     child: Text(opcion, style: const TextStyle(fontSize: 18)),

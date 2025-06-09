@@ -21,7 +21,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     'COMPUTER',
     'LANGUAGE',
   ];
-
+  // Pistas para las palabras
   final Map<String, String> _pistas = {
     'APPLE': '🍎 Fruta',
     'HOUSE': '🏠 Lugar para vivir',
@@ -31,11 +31,11 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     'COMPUTER': '💻 Dispositivo electrónico',
     'LANGUAGE': '🗣️ Medio de comunicación',
   };
-
+  // Variables del juego
   late String _palabraSecreta;
   late String _pistaActual;
-  List<String> _letrasAdivinadas = [];
-  List<String> _fallos = [];
+  final List<String> _letrasAdivinadas = [];
+  final List<String> _fallos = [];
   int _intentos = 0;
   final int _maxIntentos = 6;
   bool _juegoTerminado = false;
@@ -43,7 +43,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
   int _puntos = 0;
   final AudioPlayer _audioPlayer = AudioPlayer();
   late ConfettiController _confettiController;
-
+  // Inicializa el controlador de confeti y reinicia el juego
   @override
   void initState() {
     super.initState();
@@ -53,6 +53,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     _reiniciarJuego();
   }
 
+  // Reinicia el juego con una palabra aleatoria y pista
   void _reiniciarJuego() {
     setState(() {
       _palabraSecreta = _palabras[Random().nextInt(_palabras.length)];
@@ -66,12 +67,14 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     });
   }
 
+  // Método para adivinar una letra
   void _adivinarLetra(String letra) async {
     if (_juegoTerminado ||
         _letrasAdivinadas.contains(letra) ||
-        _fallos.contains(letra))
+        _fallos.contains(letra)) {
       return;
-
+    }
+    // Reproduce el audio de la letra adivinada
     setState(() {
       if (_palabraSecreta.contains(letra)) {
         _letrasAdivinadas.add(letra);
@@ -98,6 +101,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     });
   }
 
+  // Construye la palabra con las letras adivinadas
   Widget _construirPalabra() {
     return Wrap(
       alignment: WrapAlignment.center,
@@ -112,6 +116,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
+  // Construye el teclado con las letras del alfabeto
   Widget _construirTeclado() {
     const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     return Wrap(
@@ -141,6 +146,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
+  // Construye el resultado del juego
   Widget _construirResultado() {
     if (!_juegoTerminado) return const SizedBox.shrink();
     return Column(
@@ -175,6 +181,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
+  // Construye la imagen del ahorcado según los intentos
   Widget _construirAhorcado() {
     final path = 'assets/ahorcado/$_intentos.png';
     return Padding(
@@ -190,6 +197,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
+  // Guarda la puntuación en Firestore
   @override
   void dispose() {
     _audioPlayer.dispose();

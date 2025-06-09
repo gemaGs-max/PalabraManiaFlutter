@@ -7,7 +7,7 @@ import 'dart:math';
 
 class TraduccionTecnicaPage extends StatefulWidget {
   const TraduccionTecnicaPage({super.key});
-
+  // Esta página es un juego de traducción técnica de términos informáticos
   @override
   State<TraduccionTecnicaPage> createState() => _TraduccionTecnicaPageState();
 }
@@ -40,7 +40,7 @@ class _TraduccionTecnicaPageState extends State<TraduccionTecnicaPage> {
       'respuesta': 'interface',
     },
   ];
-
+  // Variables del juego
   int _indice = 0;
   int _puntos = 0;
   String _mensajeMono = '';

@@ -11,13 +11,14 @@ class MemoriaPage extends StatefulWidget {
   _MemoriaPageState createState() => _MemoriaPageState();
 }
 
+// Estado de la pantalla de memoria
 class _MemoriaPageState extends State<MemoriaPage> {
   List<_CartaMemoria> _cartas = [];
   List<int> _seleccionadas = [];
   bool _bloqueado = false;
   int _puntos = 0;
   int _mejorPuntuacion = 0;
-
+  // Controlador de confeti para animaciones
   final ConfettiController _confettiController = ConfettiController(
     duration: Duration(seconds: 2),
   );
@@ -43,6 +44,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     }
   }
 
+  // Limpiar recursos al cerrar la pantalla
   @override
   void dispose() {
     _confettiController.dispose();
@@ -57,14 +59,16 @@ class _MemoriaPageState extends State<MemoriaPage> {
       {'es': '🐶', 'en': 'Dog'},
       {'es': '🍎', 'en': 'Apple'},
       {'es': '📖', 'en': 'Book'},
+      {'es': '🏫', 'en': 'School'},
+      {'es': '💻', 'en': 'Computer'},
     ];
-
+    // Crear una lista con todas las cartas duplicadas
     List<_CartaMemoria> todas = [];
     for (var par in pares) {
       todas.add(_CartaMemoria(texto: par['es']!, id: par['es']!));
       todas.add(_CartaMemoria(texto: par['en']!, id: par['es']!));
     }
-
+    // Mezclar las cartas aleatoriamente
     todas.shuffle(Random());
     setState(() {
       _cartas = todas;
@@ -95,7 +99,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
 
       final sonido = esPar ? 'correcto.mp3' : 'error.mp3';
       await _player.play(AssetSource('audios/$sonido'));
-
+      // Esperar un momento antes de revelar el resultado
       Future.delayed(Duration(milliseconds: 700), () {
         setState(() {
           if (esPar) {
@@ -214,6 +218,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     );
   }
 
+  // Guarda la puntuación en Firestore
   @override
   Widget build(BuildContext context) {
     return Stack(
