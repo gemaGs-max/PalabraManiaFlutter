@@ -11,6 +11,7 @@ class MemoriaPage extends StatefulWidget {
   _MemoriaPageState createState() => _MemoriaPageState();
 }
 
+// Página del juego de memoria con cartas que se giran y descubren
 class _MemoriaPageState extends State<MemoriaPage> {
   List<_CartaMemoria> _cartas = [];
   List<int> _seleccionadas = [];
@@ -23,7 +24,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     duration: Duration(seconds: 2),
   );
   final AudioPlayer _player = AudioPlayer();
-
+  // Controlador de confeti y reproductor de audio para efectos de sonido
   @override
   void initState() {
     super.initState();
@@ -31,6 +32,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     _cargarMejorPuntuacion();
   }
 
+  // Inicializa las cartas y carga la mejor puntuación del usuario
   void _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -43,6 +45,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     }
   }
 
+  // Carga la mejor puntuación del usuario desde Firestore
   @override
   void dispose() {
     _confettiController.dispose();
@@ -50,6 +53,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     super.dispose();
   }
 
+  // Carga las cartas de memoria y la mejor puntuación del usuario
   void _generarCartas() {
     final pares = [
       {'es': '🏠', 'en': 'House'},
@@ -71,6 +75,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     });
   }
 
+  // Genera las cartas de memoria y las mezcla aleatoriamente
   void _seleccionarCarta(int index) async {
     if (_bloqueado || _cartas[index].descubierta || _cartas[index].girada)
       return;
@@ -126,7 +131,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(logro),
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: const Color.fromARGB(255, 58, 177, 183),
               ),
             );
           }
@@ -137,6 +142,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     }
   }
 
+  // Selecciona una carta y maneja la lógica de emparejamiento
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -171,6 +177,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     );
   }
 
+  // Muestra un diálogo al finalizar el juego con la puntuación obtenida
   Widget _buildCarta(_CartaMemoria carta, int index) {
     return GestureDetector(
       onTap: () => _seleccionarCarta(index),
@@ -222,6 +229,7 @@ class _MemoriaPageState extends State<MemoriaPage> {
     );
   }
 
+  // Construye una carta de memoria con animación y efectos visuales
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -229,12 +237,22 @@ class _MemoriaPageState extends State<MemoriaPage> {
         Scaffold(
           backgroundColor: _modoNoche ? Colors.black : Color(0xFFF3E5F5),
           appBar: AppBar(
-            title: Text('🧩 Juego de Memoria'),
-            backgroundColor: _modoNoche ? Colors.black87 : Colors.deepPurple,
+            title: const Text(
+              '🧩 Juego de Memoria',
+              style: TextStyle(color: Colors.deepPurple),
+            ),
+            backgroundColor:
+                _modoNoche ? Colors.black87 : const Color(0xFFE6E6FA),
             centerTitle: true,
+            iconTheme: IconThemeData(
+              color: _modoNoche ? Colors.white : Colors.deepPurple,
+            ),
             actions: [
               IconButton(
-                icon: Icon(_modoNoche ? Icons.light_mode : Icons.dark_mode),
+                icon: Icon(
+                  _modoNoche ? Icons.light_mode : Icons.dark_mode,
+                  color: _modoNoche ? Colors.white : Colors.deepPurple,
+                ),
                 tooltip: 'Modo noche',
                 onPressed: () {
                   setState(() {
@@ -247,12 +265,16 @@ class _MemoriaPageState extends State<MemoriaPage> {
                 child: Center(
                   child: Text(
                     '⭐ $_puntos | 🏆 $_mejorPuntuacion',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: _modoNoche ? Colors.white : Colors.deepPurple,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
+
           body: Column(
             children: [
               SizedBox(height: 20),

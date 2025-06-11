@@ -6,6 +6,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'dart:math' as Math;
 
 class CompletaFrasePage extends StatefulWidget {
+  const CompletaFrasePage({super.key});
+
+  /// Página del minijuego "Completa la frase"
   @override
   _CompletaFrasePageState createState() => _CompletaFrasePageState();
 }
@@ -29,6 +32,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     },
   ];
 
+  /// Lista de frases con opciones y respuestas correctas
   int _indice = 0;
   String _respuestaSeleccionada = '';
   bool _mostrandoResultado = false;
@@ -38,6 +42,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
   late ConfettiController _estrellaController;
   final AudioPlayer _player = AudioPlayer();
 
+  /// Controladores de confeti para animaciones de victoria
   @override
   void initState() {
     super.initState();
@@ -49,6 +54,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     );
   }
 
+  /// Inicializa los controladores de confeti
   @override
   void dispose() {
     _confettiController.dispose();
@@ -57,6 +63,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     super.dispose();
   }
 
+  /// Libera los recursos de los controladores y el reproductor de audio
   void _verificarRespuesta(String opcion) async {
     if (_mostrandoResultado) return;
 
@@ -91,6 +98,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     });
   }
 
+  /// Verifica la respuesta seleccionada y actualiza el estado del juego
   void _evaluarLogro() {
     if (_puntos == 1) {
       _medalla = '🥉';
@@ -101,6 +109,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     }
   }
 
+  /// Evalúa el logro obtenido según la puntuación
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -134,6 +143,8 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     );
   }
 
+  /// Muestra un diálogo final con la puntuación y opciones de reintentar o salir
+  /// Dibuja una estrella personalizada para el confeti
   Path _drawStar(Size size) {
     const numberOfPoints = 5;
     final double radius = 6;
@@ -153,6 +164,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
     return path;
   }
 
+  /// Dibuja una estrella personalizada para el confeti
   @override
   Widget build(BuildContext context) {
     final fraseActual = _frases[_indice];
@@ -210,7 +222,7 @@ class _CompletaFrasePageState extends State<CompletaFrasePage> {
                 ),
                 const SizedBox(height: 30),
                 ...fraseActual['opciones'].map<Widget>((opcion) {
-                  Color color = Colors.blueAccent;
+                  Color color = const Color.fromARGB(255, 220, 100, 194);
                   if (_mostrandoResultado) {
                     if (opcion == fraseActual['correcta']) {
                       color = Colors.green;

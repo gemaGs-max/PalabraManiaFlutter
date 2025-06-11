@@ -1,3 +1,4 @@
+// Pantalla que muestra el perfil del usuario logueado
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -19,12 +20,14 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
   @override
   void initState() {
     super.initState();
-    _cargarDatosUsuario();
+    _cargarDatosUsuario(); // Carga los datos al iniciar la pantalla
   }
 
-  int nivelUsuario() => (puntosTotales / 100).floor() + 1;
-  double progresoNivel() => (puntosTotales % 100) / 100;
+  // 🔁 Unificamos el cálculo de nivel con la pantalla de juegos
+  int nivelUsuario() => (puntosTotales / 50).floor() + 1;
+  double progresoNivel() => (puntosTotales % 50) / 50;
 
+  // Carga desde Firestore los datos del usuario actual y sus puntuaciones
   Future<void> _cargarDatosUsuario() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -108,6 +111,7 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
             const Divider(height: 30),
+
             const Text(
               '🧩 Mejores puntuaciones por minijuego:',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -125,7 +129,9 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                   style: const TextStyle(fontSize: 16),
                 );
               }),
+
             const Divider(height: 30),
+
             const Text(
               '🏅 Logros desbloqueados:',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -146,6 +152,7 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                 '🧩 Has jugado a los 3 minijuegos diferentes 👏',
                 style: TextStyle(fontSize: 16),
               ),
+
             const SizedBox(height: 30),
             ElevatedButton.icon(
               onPressed: () {

@@ -6,6 +6,7 @@ import 'package:confetti/confetti.dart';
 class PronunciacionSimulada extends StatefulWidget {
   const PronunciacionSimulada({super.key});
 
+  // Pantalla que simula la pronunciación en inglés con frases y audios
   @override
   State<PronunciacionSimulada> createState() => _PronunciacionSimuladaState();
 }
@@ -19,16 +20,19 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
     {'texto': 'Have a great day!', 'audio': 'great_day.mp3'},
   ];
 
+  // Lista de frases en inglés con sus audios correspondientes
   final AudioPlayer _player = AudioPlayer();
   late ConfettiController _confettiController;
   int fraseActual = 0;
 
+  // Controlador de confeti para animaciones festivas
   @override
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: Duration(seconds: 2));
   }
 
+  // Libera recursos al cerrar la pantalla
   @override
   void dispose() {
     _player.dispose();
@@ -36,6 +40,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
     super.dispose();
   }
 
+  // Reproduce el audio de la frase actual y muestra confeti
   Future<void> reproducirAudio(String archivo) async {
     try {
       await _player.play(AssetSource('audios/$archivo'));
@@ -45,6 +50,7 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
     }
   }
 
+  // Cambia a la siguiente frase, reiniciando al llegar al final
   void siguienteFrase() {
     setState(() {
       fraseActual = (fraseActual + 1) % frases.length;
@@ -74,26 +80,36 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
                   style: TextStyle(fontSize: 22),
                 ),
                 const SizedBox(height: 20),
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      '"${frase['texto']}"',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal,
+
+                // Tarjeta centrada visualmente con ancho limitado
+                Center(
+                  child: SizedBox(
+                    width: 300,
+                    child: Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      textAlign: TextAlign.center,
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          '"${frase['texto']}"',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 40),
+
+                // Botón de reproducir audio
                 ElevatedButton.icon(
                   icon: const Icon(Icons.volume_up),
                   label: const Text('Escuchar audio'),
@@ -110,19 +126,24 @@ class _PronunciacionSimuladaState extends State<PronunciacionSimulada> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
+
+                // Botón de siguiente frase
                 ElevatedButton(
                   onPressed: siguienteFrase,
-                  child: const Text('➡️ Otra frase'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey.shade200,
                     foregroundColor: Colors.black,
                   ),
+                  child: const Text('➡️ Otra frase'),
                 ),
               ],
             ),
           ),
         ),
+
+        // Confeti visual al escuchar audio
         Align(
           alignment: Alignment.center,
           child: ConfettiWidget(

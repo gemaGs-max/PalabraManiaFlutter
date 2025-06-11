@@ -1,199 +1,239 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:confetti/confetti.dart';
 import 'dart:math';
-import 'package:palabramania/services/firestore_service.dart'; // Asegúrate de tener esta función
+import 'package:audioplayers/audioplayers.dart';
+import 'package:palabramania/widgets/personaje_habla.dart';
+import 'package:palabramania/pantalla_juegos.dart';
 
 class RetoProPage extends StatefulWidget {
   const RetoProPage({super.key});
-
   @override
   State<RetoProPage> createState() => _RetoProPageState();
 }
 
 class _RetoProPageState extends State<RetoProPage> {
-  // Lista de preguntas tipo test
-  final List<Map<String, dynamic>> _preguntas = [
+  final List<Map<String, dynamic>> _escenarios = [
     {
-      'pregunta': 'What is the capital of France?',
-      'opciones': ['London', 'Madrid', 'Paris'],
-      'respuesta': 'Paris',
+      'tipo': 'completar',
+      'narrativa': '🔍 Encuentras una nota en la mesa que dice:',
+      'frase': 'I ___ in London last summer.',
+      'opciones': ['go', 'gone', 'was', 'was living'],
+      'respuesta': 'was living',
     },
     {
-      'pregunta': 'Which animal says "meow"?',
-      'opciones': ['Dog', 'Cat', 'Bird'],
-      'respuesta': 'Cat',
+      'tipo': 'ordenar',
+      'narrativa': '🔐 El candado tiene un mensaje desordenado:',
+      'palabras': ['you', 'can', 'open', 'the', 'door'],
+      'correcta': 'you can open the door',
     },
     {
-      'pregunta': 'How many colors are there in a rainbow?',
-      'opciones': ['5', '7', '9'],
-      'respuesta': '7',
+      'tipo': 'trivia',
+      'narrativa': '🧠 Pregunta clave para avanzar:',
+      'pregunta': 'What is the past of "run"?',
+      'opciones': ['runned', 'ran', 'run', 'running'],
+      'respuesta': 'ran',
     },
     {
-      'pregunta': 'Which planet is known as the Red Planet?',
-      'opciones': ['Mars', 'Venus', 'Saturn'],
-      'respuesta': 'Mars',
-    },
-    {
-      'pregunta': 'What is the most spoken language in the world?',
-      'opciones': ['Spanish', 'English', 'Chinese'],
-      'respuesta': 'Chinese',
+      'tipo': 'completar',
+      'narrativa': '📜 Última frase en el libro:',
+      'frase': 'She has ___ her homework.',
+      'opciones': ['do', 'did', 'done', 'doing'],
+      'respuesta': 'done',
     },
   ];
 
-  late List<Map<String, dynamic>> _preguntasSeleccionadas;
-  int _preguntaActual = 0;
-  int _puntuacion = 0;
-  int _mejorPuntuacion = 0;
-  String _fraseMono = '¡Hola! ¿Preparado para el reto?';
-  bool _mostrarBoton = false;
+  int _indice = 0;
+  int _puntos = 0;
+  String _mensajeMono = '¡Comienza el reto!';
 
-  final List<String> _frasesExito = [
-    '¡Eres genial!',
-    '¡Muy bien hecho!',
-    '¡Correcto!',
-    '¡Sigue así!',
-  ];
+  final ConfettiController _confettiController = ConfettiController(
+    duration: const Duration(seconds: 1),
+  );
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
-  final List<String> _frasesFallo = [
-    '¡Ups! Esa no era...',
-    '¡Casi!',
-    '¡Inténtalo de nuevo!',
-    '¡No pasa nada!',
-  ];
+  void _validarRespuesta(String respuestaSeleccionada) async {
+    final escenario = _escenarios[_indice];
+    bool acierto = false;
+
+    if (escenario['tipo'] == 'completar' || escenario['tipo'] == 'trivia') {
+      acierto = respuestaSeleccionada == escenario['respuesta'];
+    } else if (escenario['tipo'] == 'ordenar') {
+      acierto =
+          respuestaSeleccionada.trim().toLowerCase() ==
+          escenario['correcta'].trim().toLowerCase();
+    }
+
+    if (acierto) {
+      setState(() {
+        _puntos++;
+        _mensajeMono = '¡Correcto!';
+      });
+      _confettiController.play();
+      await _audioPlayer.play(AssetSource('audios/correcto.mp3'));
+    } else {
+      setState(() {
+        _mensajeMono = '¡Intenta de nuevo!';
+      });
+      await _audioPlayer.play(AssetSource('audios/error.mp3'));
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (_indice < _escenarios.length - 1) {
+      setState(() {
+        _indice++;
+        _mensajeMono = '¡Vamos al siguiente!';
+      });
+    } else {
+      setState(() {
+        if (_puntos == _escenarios.length) {
+          _mensajeMono = '🎉 ¡Perfecto! ¡Eres un crack!';
+        } else if (_puntos >= (_escenarios.length / 2)) {
+          _mensajeMono = '😎 ¡Bien hecho, sigue así!';
+        } else {
+          _mensajeMono = '🙈 ¡Puedes hacerlo mejor, inténtalo otra vez!';
+        }
+      });
+      _confettiController.play();
+      Future.delayed(const Duration(seconds: 2), () => _mostrarDialogoFinal());
+    }
+  }
+
+  void _mostrarDialogoFinal() {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('¡Reto Completado!'),
+            content: Text('Puntos obtenidos: $_puntos / ${_escenarios.length}'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _reiniciar();
+                },
+                child: const Text('Reintentar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PantallaJuegos()),
+                  );
+                },
+                child: const Text('Volver al menú'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _reiniciar() {
+    setState(() {
+      _indice = 0;
+      _puntos = 0;
+      _mensajeMono = '¡Comienza el reto!';
+    });
+  }
 
   @override
-  void initState() {
-    super.initState();
-    _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
-    _cargarMejorPuntuacion();
-  }
-
-  // Cargar la mejor puntuación desde Firestore
-  Future<void> _cargarMejorPuntuacion() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final datos = await getPuntuacion(user.uid, 'retoPro');
-    setState(() {
-      _mejorPuntuacion = datos?['puntos'] ?? 0;
-    });
-  }
-
-  // Seleccionar preguntas aleatorias del total
-  List<Map<String, dynamic>> _obtenerPreguntasAleatorias(int cantidad) {
-    final copia = List<Map<String, dynamic>>.from(_preguntas);
-    copia.shuffle();
-    return copia.take(cantidad).toList();
-  }
-
-  // Procesar la respuesta elegida
-  void _responder(String seleccionada) {
-    final pregunta = _preguntasSeleccionadas[_preguntaActual];
-    final esCorrecta = seleccionada == pregunta['respuesta'];
-
-    setState(() {
-      if (esCorrecta) {
-        _puntuacion++;
-        _fraseMono = _frasesExito[Random().nextInt(_frasesExito.length)];
-      } else {
-        _fraseMono = _frasesFallo[Random().nextInt(_frasesFallo.length)];
-      }
-
-      if (_preguntaActual < _preguntasSeleccionadas.length - 1) {
-        _preguntaActual++;
-      } else {
-        _mostrarBoton = true;
-        guardarPuntuacion('retoPro', _puntuacion);
-      }
-    });
-  }
-
-  // Reiniciar el juego
-  void _reiniciarJuego() {
-    setState(() {
-      _preguntasSeleccionadas = _obtenerPreguntasAleatorias(3);
-      _preguntaActual = 0;
-      _puntuacion = 0;
-      _fraseMono = '¡Hola! ¿Preparado para el reto?';
-      _mostrarBoton = false;
-    });
+  void dispose() {
+    _confettiController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final pregunta = _preguntasSeleccionadas[_preguntaActual];
+    final escenario = _escenarios[_indice];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🐒 Reto Pro'),
-        backgroundColor: const Color.fromARGB(255, 14, 239, 93),
+        title: const Text('Reto Pro: Escape Room'),
+        backgroundColor: Colors.deepOrange,
       ),
-      backgroundColor: Colors.deepPurple[50],
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset('assets/images/mono.png', height: 100),
-            const SizedBox(height: 10),
-
-            // Frase que dice el personaje animado
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              child: Text(
-                _fraseMono,
-                key: ValueKey(_fraseMono),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            Text(
-              '🧠 Mejor puntuación: $_mejorPuntuacion',
-              style: const TextStyle(fontSize: 14),
-            ),
-
-            const SizedBox(height: 10),
-            Text(
-              pregunta['pregunta'],
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Botones de opciones
-            ...List.generate(pregunta['opciones'].length, (index) {
-              final opcion = pregunta['opciones'][index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: ElevatedButton(
-                  onPressed: _mostrarBoton ? null : () => _responder(opcion),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigoAccent,
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: Text(opcion, style: const TextStyle(fontSize: 16)),
-                ),
-              );
-            }),
-
-            if (_mostrarBoton) ...[
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Center(child: PersonajeHabla(texto: _mensajeMono)),
               const SizedBox(height: 20),
               Text(
-                '🏅 Puntuación: $_puntuacion / ${_preguntasSeleccionadas.length}',
+                escenario['narrativa'],
+                style: const TextStyle(fontSize: 20),
               ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _reiniciarJuego,
-                child: const Text('¿Intentar de nuevo?'),
-              ),
+              const SizedBox(height: 16),
+              if (escenario['tipo'] == 'completar') ...[
+                Text(escenario['frase'], style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 10),
+                ...escenario['opciones'].map<Widget>((op) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () => _validarRespuesta(op),
+                      child: Text(op),
+                    ),
+                  );
+                }).toList(),
+              ] else if (escenario['tipo'] == 'ordenar') ...[
+                const Text('Ordena las palabras correctamente:'),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children:
+                      (escenario['palabras'] as List<String>)
+                          .map((palabra) => Chip(label: Text(palabra)))
+                          .toList(),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed:
+                      () => _validarRespuesta(
+                        (escenario['palabras'] as List<String>).join(' '),
+                      ),
+                  child: const Text('Enviar respuesta'),
+                ),
+              ] else if (escenario['tipo'] == 'trivia') ...[
+                Text(
+                  escenario['pregunta'],
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 10),
+                ...escenario['opciones'].map<Widget>((op) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () => _validarRespuesta(op),
+                      child: Text(op),
+                    ),
+                  );
+                }).toList(),
+              ],
+              const Spacer(),
+              Text('Puntos: $_puntos', style: const TextStyle(fontSize: 16)),
+              const SizedBox(height: 16),
             ],
-          ],
-        ),
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2,
+              maxBlastForce: 15,
+              minBlastForce: 5,
+              emissionFrequency: 0.06,
+              numberOfParticles: 25,
+              gravity: 0.1,
+            ),
+          ),
+        ],
       ),
     );
   }

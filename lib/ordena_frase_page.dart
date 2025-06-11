@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class OrdenaFrasePage extends StatefulWidget {
   const OrdenaFrasePage({super.key});
-
+  // Esta página es un juego de ordenar frases en inglés
   @override
   State<OrdenaFrasePage> createState() => _OrdenaFrasePageState();
 }
@@ -25,19 +25,19 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     {'es': 'Hoy es un buen día', 'en': 'Today is a good day'},
     {'es': 'Vamos al parque mañana', 'en': 'We go to the park tomorrow'},
   ];
-
+  // Lista de frases en español e inglés para ordenar
   late Map<String, String> _fraseActual;
   List<Map<String, String>> _frasesRestantes = [];
   List<String> _palabrasDesordenadas = [];
   List<String> _respuestaUsuario = [];
-
+  // Variables del juego
   late ConfettiController _confettiController;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _mostrarResultado = false;
   bool _esCorrecto = false;
   int _puntos = 0;
   int _mejorPuntuacion = 0;
-
+  // Controlador de confeti para animaciones festivas
   @override
   void initState() {
     super.initState();
@@ -49,6 +49,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     _nuevaFrase();
   }
 
+  // Carga la mejor puntuación del usuario desde Firestore
   Future<void> _cargarMejorPuntuacion() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -61,6 +62,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     }
   }
 
+  // Crea una nueva frase desordenada y reinicia el estado del juego
   void _nuevaFrase() {
     setState(() {
       _mostrarResultado = false;
@@ -77,6 +79,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     });
   }
 
+  // Reinicia el juego y muestra un diálogo de finalización
   void _mostrarDialogoFinal() {
     showDialog(
       context: context,
@@ -90,8 +93,8 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Cierra diálogo
-                  Navigator.pop(context); // Vuelve a menú
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 },
                 child: const Text('Salir'),
               ),
@@ -111,6 +114,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     );
   }
 
+  // Selecciona una palabra desordenada y la añade a la respuesta del usuario
   void _seleccionarPalabra(String palabra) {
     if (_mostrarResultado) return;
 
@@ -120,6 +124,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     });
   }
 
+  // Verifica si la respuesta del usuario es correcta y actualiza el estado del juego
   void _verificar() async {
     if (_respuestaUsuario.join(' ') == _fraseActual['en']) {
       _esCorrecto = true;
@@ -132,13 +137,10 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
       await _audioPlayer.play(AssetSource('audios/correcto.mp3'));
 
       String? mensajeEspecial;
-      if (_puntos == 3) {
-        mensajeEspecial = '🥉 ¡Buen comienzo!';
-      } else if (_puntos == 5) {
-        mensajeEspecial = '🥈 ¡Muy bien! Sigue así 💪';
-      } else if (_puntos == 10) {
-        mensajeEspecial = '🥇 ¡Increíble! Nivel experto 🔥';
-      }
+      if (_puntos == 3) mensajeEspecial = '🥉 ¡Buen comienzo!';
+      if (_puntos == 5) mensajeEspecial = '🥈 ¡Muy bien! Sigue así 💪';
+      if (_puntos == 10) mensajeEspecial = '🥇 ¡Increíble! Nivel experto 🔥';
+
       if (mensajeEspecial != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -156,13 +158,7 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     setState(() => _mostrarResultado = true);
   }
 
-  @override
-  void dispose() {
-    _confettiController.dispose();
-    _audioPlayer.dispose();
-    super.dispose();
-  }
-
+  // Construye el widget de palabras desordenadas y respuesta del usuario
   Widget _buildPalabras(List<String> palabras, void Function(String) onTap) {
     return Wrap(
       spacing: 8,
@@ -192,6 +188,15 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
     );
   }
 
+  // Libera recursos al cerrar la página
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  // Construye la interfaz de usuario de la página
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -203,7 +208,6 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             centerTitle: true,
             title: Row(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('🔤 Ordena la frase'),
                 const SizedBox(width: 16),
@@ -229,19 +233,37 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Traduce: "${_fraseActual['es']}"',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                // Frase en español centrada en tarjeta
+                Center(
+                  child: SizedBox(
+                    width: 300,
+                    child: Card(
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Traduce: "${_fraseActual['es']}"',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
+
                 const SizedBox(height: 20),
                 _buildPalabras(_respuestaUsuario, (_) {}),
                 const SizedBox(height: 16),
                 _buildPalabras(_palabrasDesordenadas, _seleccionarPalabra),
                 const SizedBox(height: 30),
+
                 if (!_mostrarResultado)
                   ElevatedButton(
                     onPressed: _verificar,
@@ -254,33 +276,58 @@ class _OrdenaFrasePageState extends State<OrdenaFrasePage> {
                     ),
                     child: const Text('Verificar'),
                   ),
+
                 if (_mostrarResultado)
-                  Column(
-                    children: [
-                      Text(
-                        _esCorrecto ? '✅ ¡Correcto!' : '❌ Intenta de nuevo',
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: _esCorrecto ? Colors.green : Colors.red,
+                  Center(
+                    child: SizedBox(
+                      width: 300,
+                      child: Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        color:
+                            _esCorrecto
+                                ? Colors.green.shade50
+                                : Colors.red.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              Text(
+                                _esCorrecto
+                                    ? '✅ ¡Correcto!'
+                                    : '❌ Intenta de nuevo',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  color:
+                                      _esCorrecto ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Mejor puntuación: $_mejorPuntuacion ⭐',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 10),
+                              ElevatedButton(
+                                onPressed: _nuevaFrase,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepOrange,
+                                ),
+                                child: const Text('Otra frase'),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Mejor puntuación: $_mejorPuntuacion ⭐',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _nuevaFrase,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepOrange,
-                        ),
-                        child: const Text('Otra frase'),
-                      ),
-                    ],
+                    ),
                   ),
               ],
             ),

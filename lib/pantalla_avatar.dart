@@ -43,7 +43,6 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
           SnackBar(content: Text('✅ Avatar actualizado: $avatar')),
         );
 
-        // Volver a pantalla anterior (perfil o juegos)
         Navigator.pop(context);
       }
     }
@@ -62,13 +61,29 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
         child:
             _guardando
                 ? const Center(child: CircularProgressIndicator())
-                : GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  children:
-                      _avatares.map((avatar) {
+                : LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Responsive: ajusta número de columnas según el ancho
+                    final ancho = constraints.maxWidth;
+                    final columnas =
+                        ancho > 1000
+                            ? 5
+                            : ancho > 700
+                            ? 4
+                            : 2;
+
+                    return GridView.builder(
+                      itemCount: _avatares.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columnas,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 1,
+                      ),
+                      itemBuilder: (context, index) {
+                        final avatar = _avatares[index];
                         final isSelected = _seleccionado == avatar;
+
                         return GestureDetector(
                           onTap: () => _guardarAvatar(avatar),
                           child: Container(
@@ -81,14 +96,24 @@ class _PantallaAvatarState extends State<PantallaAvatar> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(10),
-                              child: Image.asset(
-                                'assets/avatars/$avatar',
-                                fit: BoxFit.cover,
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: Image.asset(
+                                  'assets/avatars/$avatar',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Icon(Icons.broken_image, size: 40),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),
                         );
-                      }).toList(),
+                      },
+                    );
+                  },
                 ),
       ),
     );

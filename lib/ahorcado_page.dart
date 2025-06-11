@@ -3,10 +3,11 @@ import 'dart:math';
 import 'package:palabramania/services/firestore_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
+import 'package:palabramania/pantalla_juegos.dart';
 
 class AhorcadoPage extends StatefulWidget {
   const AhorcadoPage({super.key});
-
+  // Esta página es el juego del ahorcado con palabras en inglés y pistas
   @override
   State<AhorcadoPage> createState() => _AhorcadoPageState();
 }
@@ -21,7 +22,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     'COMPUTER',
     'LANGUAGE',
   ];
-  // Pistas para las palabras
+  // Lista de palabras en inglés para el juego del ahorcado
   final Map<String, String> _pistas = {
     'APPLE': '🍎 Fruta',
     'HOUSE': '🏠 Lugar para vivir',
@@ -31,7 +32,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     'COMPUTER': '💻 Dispositivo electrónico',
     'LANGUAGE': '🗣️ Medio de comunicación',
   };
-  // Variables del juego
+  // Mapa de palabras con sus pistas correspondientes
   late String _palabraSecreta;
   late String _pistaActual;
   final List<String> _letrasAdivinadas = [];
@@ -43,7 +44,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
   int _puntos = 0;
   final AudioPlayer _audioPlayer = AudioPlayer();
   late ConfettiController _confettiController;
-  // Inicializa el controlador de confeti y reinicia el juego
+  // Controlador de confeti para animaciones festivas
   @override
   void initState() {
     super.initState();
@@ -53,7 +54,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     _reiniciarJuego();
   }
 
-  // Reinicia el juego con una palabra aleatoria y pista
+  // Inicializa el controlador de confeti y reinicia el juego
   void _reiniciarJuego() {
     setState(() {
       _palabraSecreta = _palabras[Random().nextInt(_palabras.length)];
@@ -67,14 +68,13 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     });
   }
 
-  // Método para adivinar una letra
+  // Reinicia el juego con una nueva palabra y pista
   void _adivinarLetra(String letra) async {
     if (_juegoTerminado ||
         _letrasAdivinadas.contains(letra) ||
-        _fallos.contains(letra)) {
+        _fallos.contains(letra))
       return;
-    }
-    // Reproduce el audio de la letra adivinada
+
     setState(() {
       if (_palabraSecreta.contains(letra)) {
         _letrasAdivinadas.add(letra);
@@ -83,11 +83,17 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
         if (_palabraSecreta
             .split('')
             .every((l) => _letrasAdivinadas.contains(l))) {
-          _juegoTerminado = true;
-          _ganado = true;
           _puntos = _palabraSecreta.length * 2;
-          guardarPuntuacion('ahorcado', _puntos);
           _confettiController.play();
+
+          guardarPuntuacion('ahorcado', _puntos).then((_) {
+            if (mounted) {
+              setState(() {
+                _juegoTerminado = true;
+                _ganado = true;
+              });
+            }
+          });
         }
       } else {
         _intentos++;
@@ -95,13 +101,15 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
         _audioPlayer.play(AssetSource('audios/error.mp3'));
 
         if (_intentos >= _maxIntentos) {
-          _juegoTerminado = true;
+          setState(() {
+            _juegoTerminado = true;
+          });
         }
       }
     });
   }
 
-  // Construye la palabra con las letras adivinadas
+  // Adivina una letra y actualiza el estado del juego
   Widget _construirPalabra() {
     return Wrap(
       alignment: WrapAlignment.center,
@@ -116,7 +124,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
-  // Construye el teclado con las letras del alfabeto
+  // Construye la representación visual de la palabra a adivinar
   Widget _construirTeclado() {
     const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     return Wrap(
@@ -146,7 +154,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
-  // Construye el resultado del juego
+  // Construye el teclado con botones para cada letra del alfabeto
   Widget _construirResultado() {
     if (!_juegoTerminado) return const SizedBox.shrink();
     return Column(
@@ -172,16 +180,27 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
           'Puntos: $_puntos',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 10),
-        ElevatedButton(
+        const SizedBox(height: 20),
+        ElevatedButton.icon(
           onPressed: _reiniciarJuego,
-          child: const Text('🔁 Jugar otra vez'),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Reintentar'),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton.icon(
+          onPressed:
+              () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const PantallaJuegos()),
+              ),
+          icon: const Icon(Icons.home),
+          label: const Text('Volver al menú'),
         ),
       ],
     );
   }
 
-  // Construye la imagen del ahorcado según los intentos
+  // Construye el resultado final del juego, mostrando si se ganó o perdió
   Widget _construirAhorcado() {
     final path = 'assets/ahorcado/$_intentos.png';
     return Padding(
@@ -197,7 +216,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     );
   }
 
-  // Guarda la puntuación en Firestore
+  // Construye la imagen del ahorcado según el número de intentos
   @override
   void dispose() {
     _audioPlayer.dispose();
@@ -205,6 +224,7 @@ class _AhorcadoPageState extends State<AhorcadoPage> {
     super.dispose();
   }
 
+  // Libera los recursos del audio y el confeti al cerrar la página
   @override
   Widget build(BuildContext context) {
     return Stack(
